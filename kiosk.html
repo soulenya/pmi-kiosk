@@ -1,0 +1,2014 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>PMI — VACTOR System</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700;900&display=swap" rel="stylesheet">
+  <!-- Pi mode applied before CSS so the correct transition durations are used from the first paint -->
+  <script>
+    if (window.kiosk) {
+      if (window.kiosk.piMode === 'zero') document.documentElement.classList.add('pi-zero','is-pi');
+      else if (window.kiosk.piMode === 'pi5') document.documentElement.classList.add('is-pi');
+    }
+  </script>
+  <style>
+    /* ── Reset & Tokens ─────────────────────────────────── */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --red:        #E8000D;
+      --black:      #0D0D0D;
+      --off-black:  #131313;
+      --mid:        #1a1a1a;
+      --white:      #FFFFFF;
+      --off-white:  #F5F5F5;
+      --muted:      rgba(255,255,255,0.48);
+      --font:       'Inter', system-ui, sans-serif;
+      --fw-light:   300;
+      --fw-reg:     400;
+      --fw-semi:    600;
+      --fw-bold:    700;
+      --fw-black:   900;
+      --red-glow:   0 0 32px rgba(232,0,13,0.35);
+    }
+
+    html, body {
+      width: 100%; height: 100%;
+      overflow: hidden;
+      background: var(--black);
+      font-family: var(--font);
+      color: var(--white);
+      user-select: none;
+      -webkit-user-select: none;
+    }
+
+    /* ── Screen system ───────────────────────────────────── */
+    #app {
+      width: 100vw; height: 100vh;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .screen {
+      position: absolute;
+      inset: 0;
+      display: flex;
+      flex-direction: column;
+      opacity: 0;
+      pointer-events: none;
+      transform: translateX(60px);
+      transition: opacity 0.55s cubic-bezier(0.16,1,0.3,1),
+                  transform 0.55s cubic-bezier(0.16,1,0.3,1);
+      overflow: hidden;
+    }
+    .screen.is-active {
+      opacity: 1;
+      pointer-events: all;
+      transform: translateX(0);
+      z-index: 2;
+    }
+    .screen.is-prev {
+      opacity: 0;
+      transform: translateX(-60px);
+      z-index: 1;
+    }
+
+    /* ── HUD bar (always on top) ──────────────────────────── */
+    #hud {
+      position: fixed;
+      top: 0; left: 0; right: 0;
+      height: 52px;
+      z-index: 100;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 40px;
+      background: linear-gradient(to bottom, rgba(13,13,13,0.95) 0%, transparent 100%);
+      pointer-events: none;
+    }
+    #hud-logo { height: 22px; opacity: 0.9; }
+    #hud-nav {
+      display: flex;
+      gap: 6px;
+      align-items: center;
+    }
+    .hud-dot {
+      width: 7px; height: 7px;
+      border-radius: 50%;
+      background: rgba(255,255,255,0.22);
+      transition: background 0.3s, transform 0.3s;
+    }
+    .hud-dot.is-active {
+      background: var(--red);
+      transform: scale(1.35);
+      box-shadow: var(--red-glow);
+    }
+    #hud-keys {
+      font-size: 10px;
+      letter-spacing: 0.08em;
+      color: rgba(255,255,255,0.28);
+      font-weight: var(--fw-semi);
+      text-transform: uppercase;
+    }
+
+    /* ── Key hint bar (bottom) ─────────────────────────────── */
+    #keyhint {
+      position: fixed;
+      bottom: 0; left: 0; right: 0;
+      height: 44px;
+      z-index: 100;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 32px;
+      background: linear-gradient(to top, rgba(13,13,13,0.92) 0%, transparent 100%);
+      pointer-events: none;
+    }
+    .key-item {
+      display: flex; align-items: center; gap: 8px;
+      font-size: 11px;
+      color: rgba(255,255,255,0.32);
+      letter-spacing: 0.06em;
+      font-weight: var(--fw-semi);
+      text-transform: uppercase;
+    }
+    .key-badge {
+      display: inline-flex; align-items: center; justify-content: center;
+      min-width: 26px; height: 20px;
+      padding: 0 6px;
+      border: 1px solid rgba(255,255,255,0.18);
+      border-radius: 4px;
+      font-size: 10px;
+      font-weight: var(--fw-bold);
+      letter-spacing: 0.04em;
+    }
+    .key-badge.is-red {
+      border-color: var(--red);
+      color: var(--red);
+    }
+
+    /* ── Utility classes ─────────────────────────────────── */
+    .label {
+      font-size: clamp(9px, 0.7vw, 11px);
+      font-weight: var(--fw-semi);
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      color: var(--red);
+      margin-bottom: 14px;
+    }
+    .headline {
+      font-size: clamp(42px, 5.5vw, 88px);
+      font-weight: var(--fw-black);
+      line-height: 1.0;
+      letter-spacing: -0.03em;
+    }
+    .subhead {
+      font-size: clamp(13px, 1.1vw, 18px);
+      font-weight: var(--fw-light);
+      color: var(--muted);
+      line-height: 1.65;
+      margin-top: 16px;
+      max-width: 520px;
+    }
+    .section-bg-dark   { background: var(--black); }
+    .section-bg-mid    { background: var(--mid); }
+    .section-bg-light  { background: var(--off-white); color: var(--black); }
+    .section-bg-light .label { color: var(--red); }
+    .section-bg-light .subhead { color: rgba(0,0,0,0.55); }
+    .section-bg-light .muted  { color: rgba(0,0,0,0.5); }
+
+    .pad { padding: 80px 80px 60px; }
+    .pad-slim { padding: 60px 80px; }
+
+    /* ── Screen 0 — INTRO / HERO ──────────────────────────── */
+    #screen-0 {
+      justify-content: center;
+      align-items: flex-start;
+    }
+    .hero-inner {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      align-items: center;
+      width: 100%;
+      height: 100%;
+      padding: 0 80px;
+    }
+    .hero-text { max-width: 560px; }
+    .hero-eyebrow {
+      font-size: 11px;
+      font-weight: var(--fw-semi);
+      letter-spacing: 0.22em;
+      text-transform: uppercase;
+      color: var(--red);
+      margin-bottom: 24px;
+    }
+    .hero-verb-stack { margin-bottom: 24px; }
+    .hero-verb-row {
+      font-size: clamp(26px, 2.5vw, 40px);
+      font-weight: var(--fw-black);
+      line-height: 1.1;
+      letter-spacing: -0.035em;
+      white-space: nowrap;
+    }
+    .hero-verb-sep { color: var(--muted); }
+    .hero-cycle { color: var(--red); }
+    .hero-sub {
+      font-size: clamp(13px, 1.1vw, 17px);
+      font-weight: var(--fw-light);
+      color: var(--muted);
+      line-height: 1.7;
+      margin-bottom: 36px;
+    }
+    .hero-cta {
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      background: var(--red);
+      color: var(--white);
+      font-size: 13px;
+      font-weight: var(--fw-semi);
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      padding: 14px 28px;
+      border: none;
+      cursor: pointer;
+      touch-action: manipulation;
+      user-select: none;
+      font-family: var(--font);
+    }
+    .hero-cta:active { opacity: 0.75; }
+    .hero-visual {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+    }
+    .hero-visual img {
+      max-height: 68vh;
+      max-width: 100%;
+      object-fit: contain;
+      filter: drop-shadow(0 0 80px rgba(232,0,13,0.12));
+    }
+    .hero-key-prompt {
+      position: absolute;
+      bottom: 60px; left: 80px;
+      display: flex; align-items: center; gap: 12px;
+      font-size: 11px;
+      color: var(--muted);
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+    }
+
+    /* ── Screen 1 — THE PROBLEM ───────────────────────────── */
+    #screen-1 { justify-content: center; }
+    .problem-layout {
+      display: grid;
+      grid-template-columns: 380px 1fr;
+      gap: 80px;
+      align-items: start;
+      padding: 0 80px;
+      width: 100%;
+    }
+    .problem-list {
+      list-style: none;
+      display: flex;
+      flex-direction: column;
+      gap: 28px;
+    }
+    .problem-item {
+      display: flex;
+      gap: 20px;
+      align-items: flex-start;
+      opacity: 0;
+      transform: translateX(20px);
+      transition: opacity 0.5s ease, transform 0.5s ease;
+    }
+    .problem-item.show {
+      opacity: 1;
+      transform: translateX(0);
+    }
+    .p-num {
+      font-size: 11px;
+      font-weight: var(--fw-black);
+      letter-spacing: 0.12em;
+      color: var(--red);
+      padding-top: 3px;
+      flex-shrink: 0;
+    }
+    .p-text {
+      font-size: clamp(13px, 1.05vw, 16px);
+      font-weight: var(--fw-light);
+      color: rgba(255,255,255,0.75);
+      line-height: 1.65;
+    }
+
+    /* ── Screen 2 — THE SYSTEM (3D model) ─────────────────── */
+    #screen-2 { flex-direction: row; }
+    .system-layout {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      height: 100%;
+      width: 100%;
+    }
+    .system-model-col {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 60px 40px;
+      border-right: 1px solid rgba(255,255,255,0.06);
+      position: relative;
+    }
+    model-viewer {
+      width: 100%;
+      height: clamp(360px, 55vh, 580px);
+      background: transparent;
+      --poster-color: transparent;
+    }
+    .model-thumb-row {
+      display: flex;
+      gap: 12px;
+      margin-top: 16px;
+    }
+    .model-thumb {
+      width: 80px;
+      height: 64px;
+      object-fit: cover;
+      border: 1px solid rgba(255,255,255,0.08);
+      border-radius: 4px;
+      cursor: default;
+      opacity: 0.65;
+      transition: opacity 0.25s, border-color 0.25s;
+    }
+    .model-thumb:hover { opacity: 1; border-color: var(--red); }
+    .system-anno-col {
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      padding: 60px 56px 80px;
+      gap: 24px;
+      overflow-y: auto;
+    }
+    .anno-card {
+      display: flex;
+      gap: 18px;
+      padding: 20px 24px;
+      border: 1px solid rgba(255,255,255,0.07);
+      border-radius: 6px;
+      background: rgba(255,255,255,0.025);
+      transition: border-color 0.3s, background 0.3s;
+    }
+    .anno-card:hover { border-color: rgba(232,0,13,0.35); background: rgba(232,0,13,0.04); }
+    .anno-num {
+      font-size: 20px;
+      color: var(--red);
+      flex-shrink: 0;
+      margin-top: 2px;
+    }
+    .anno-title {
+      font-size: clamp(14px, 1.1vw, 16px);
+      font-weight: var(--fw-semi);
+      margin-bottom: 6px;
+    }
+    .anno-body {
+      font-size: clamp(12px, 0.9vw, 14px);
+      font-weight: var(--fw-light);
+      color: var(--muted);
+      line-height: 1.6;
+    }
+    .spec-badges { display: flex; gap: 8px; margin-top: 8px; }
+    .spec-badge {
+      font-size: 10px;
+      font-weight: var(--fw-bold);
+      letter-spacing: 0.1em;
+      color: var(--red);
+      border: 1px solid rgba(232,0,13,0.4);
+      padding: 3px 8px;
+      border-radius: 3px;
+    }
+
+    /* ── Screen 3 — HOW IT WORKS ──────────────────────────── */
+    #screen-3 { justify-content: center; }
+    .steps-layout {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 20px;
+      padding: 0 80px;
+      width: 100%;
+    }
+    .step-card {
+      display: flex;
+      gap: 20px;
+      padding: 28px 28px;
+      border: 1px solid rgba(255,255,255,0.07);
+      border-radius: 6px;
+      background: rgba(255,255,255,0.02);
+      align-items: flex-start;
+    }
+    .step-num {
+      font-size: clamp(48px, 4vw, 64px);
+      font-weight: var(--fw-black);
+      color: rgba(232,0,13,0.18);
+      line-height: 1;
+      flex-shrink: 0;
+      letter-spacing: -0.04em;
+    }
+    .step-title {
+      font-size: clamp(15px, 1.2vw, 20px);
+      font-weight: var(--fw-bold);
+      margin-bottom: 8px;
+    }
+    .step-body {
+      font-size: clamp(12px, 0.9vw, 14px);
+      font-weight: var(--fw-light);
+      color: var(--muted);
+      line-height: 1.65;
+    }
+
+    /* ── Screen 4 — WHO IT'S FOR ──────────────────────────── */
+    #screen-4 {
+      background: var(--off-white);
+      color: var(--black);
+    }
+    .who-layout {
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr;
+      gap: 0;
+      height: 100%;
+    }
+    .who-col {
+      display: flex;
+      flex-direction: column;
+      border-right: 1px solid rgba(0,0,0,0.07);
+      overflow: hidden;
+    }
+    .who-col:last-child { border-right: none; }
+    .who-img-wrap {
+      flex: 1;
+      overflow: hidden;
+      position: relative;
+    }
+    .who-img-wrap img {
+      position: absolute;
+      inset: 0;
+      width: 100%; height: 100%;
+      object-fit: cover;
+      opacity: 0;
+      transition: opacity 0.8s ease;
+    }
+    .who-img-wrap img.is-active { opacity: 1; }
+    .who-body {
+      padding: 28px 32px 32px;
+      background: var(--off-white);
+      border-top: 3px solid var(--red);
+    }
+    .who-title {
+      font-size: clamp(16px, 1.4vw, 22px);
+      font-weight: var(--fw-black);
+      margin-bottom: 8px;
+      color: var(--black);
+    }
+    .who-text {
+      font-size: clamp(12px, 0.85vw, 14px);
+      font-weight: var(--fw-light);
+      color: rgba(0,0,0,0.6);
+      line-height: 1.65;
+    }
+
+    /* ── Screen 5 — ABOUT ─────────────────────────────────── */
+    #screen-5 { justify-content: center; }
+    .about-layout {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 80px;
+      align-items: center;
+      padding: 0 80px;
+      width: 100%;
+    }
+    .about-body-text {
+      font-size: clamp(13px, 1.05vw, 16px);
+      font-weight: var(--fw-light);
+      color: var(--muted);
+      line-height: 1.75;
+      margin-top: 20px;
+    }
+    .about-body-text + .about-body-text { margin-top: 16px; }
+    .about-ids {
+      margin-top: 32px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+    .about-id-row {
+      display: flex;
+      gap: 16px;
+      font-size: 12px;
+    }
+    .about-id-label {
+      color: var(--muted);
+      font-weight: var(--fw-semi);
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      flex-shrink: 0;
+      width: 120px;
+    }
+    .about-id-val {
+      color: var(--white);
+      font-weight: var(--fw-bold);
+      letter-spacing: 0.1em;
+    }
+    .about-visual {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+    }
+    .about-visual img {
+      max-height: 60vh;
+      max-width: 100%;
+      object-fit: contain;
+      opacity: 0.88;
+      filter: drop-shadow(0 0 60px rgba(232,0,13,0.1));
+    }
+
+    /* ── Screen 6 — CONTACT ───────────────────────────────── */
+    #screen-6 { justify-content: center; }
+    .contact-layout {
+      display: grid;
+      grid-template-columns: 400px 1fr;
+      gap: 80px;
+      align-items: center;
+      padding: 0 80px;
+      width: 100%;
+    }
+    .contact-sub {
+      font-size: clamp(13px, 1vw, 16px);
+      font-weight: var(--fw-light);
+      color: var(--muted);
+      line-height: 1.7;
+      margin-top: 16px;
+    }
+    .contact-ids { margin-top: 28px; display: flex; flex-direction: column; gap: 10px; }
+    .contact-id-row { display: flex; flex-direction: column; gap: 2px; }
+    .contact-id-label {
+      font-size: 10px;
+      font-weight: var(--fw-semi);
+      letter-spacing: 0.16em;
+      text-transform: uppercase;
+      color: var(--red);
+    }
+    .contact-id-val {
+      font-size: 15px;
+      font-weight: var(--fw-bold);
+      letter-spacing: 0.12em;
+      color: var(--white);
+    }
+    .contact-qr-area {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 24px;
+    }
+    .contact-info-card {
+      width: 100%;
+      background: rgba(255,255,255,0.04);
+      border: 1px solid rgba(255,255,255,0.08);
+      border-radius: 8px;
+      padding: 36px 40px;
+    }
+    .contact-reach-label {
+      font-size: 10px;
+      font-weight: var(--fw-semi);
+      letter-spacing: 0.2em;
+      text-transform: uppercase;
+      color: var(--red);
+      margin-bottom: 16px;
+    }
+    .contact-website {
+      font-size: clamp(20px, 2.2vw, 32px);
+      font-weight: var(--fw-black);
+      letter-spacing: -0.02em;
+      color: var(--white);
+    }
+    .contact-email {
+      font-size: clamp(13px, 1.1vw, 17px);
+      font-weight: var(--fw-light);
+      color: var(--muted);
+      margin-top: 8px;
+    }
+    .contact-replay {
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      background: transparent;
+      border: 1px solid rgba(255,255,255,0.18);
+      color: rgba(255,255,255,0.55);
+      font-size: 11px;
+      font-weight: var(--fw-semi);
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      padding: 10px 22px;
+      border-radius: 4px;
+      cursor: default;
+      transition: border-color 0.25s, color 0.25s;
+      font-family: var(--font);
+    }
+
+    /* ── Lightbox ─────────────────────────────────────────── */
+    #lightbox {
+      position: fixed;
+      inset: 0;
+      z-index: 200;
+      background: rgba(0,0,0,0.88);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.3s ease;
+    }
+    #lightbox.is-open {
+      opacity: 1;
+      pointer-events: all;
+    }
+    #lightbox img {
+      max-width: 88vw;
+      max-height: 88vh;
+      object-fit: contain;
+      border: 1px solid rgba(255,255,255,0.08);
+    }
+
+    /* ── Model-viewer progress ────────────────────────────── */
+    .model-progress-bar {
+      position: absolute;
+      bottom: 0; left: 0; right: 0;
+      height: 3px;
+      background: rgba(255,255,255,0.08);
+    }
+    .model-progress-fill {
+      height: 100%;
+      width: 0%;
+      background: var(--red);
+      transition: width 0.25s linear;
+    }
+
+    /* ── Swap section (screen 3b) ─────────────────────────── */
+    #screen-3b { justify-content: center; align-items: center; }
+    .swap-inner {
+      width: 100%;
+      padding: 0 80px;
+      display: grid;
+      grid-template-columns: 320px 1fr;
+      gap: 60px;
+      align-items: center;
+    }
+    .swap-left {}
+    .swap-headline-sm {
+      font-size: clamp(28px, 3vw, 48px);
+      font-weight: var(--fw-black);
+      letter-spacing: -0.03em;
+      line-height: 1.1;
+    }
+    .swap-subtext {
+      font-size: 13px;
+      font-weight: var(--fw-light);
+      color: var(--muted);
+      line-height: 1.65;
+      margin-top: 14px;
+    }
+    .swap-rail-wrap { margin-top: 28px; }
+    .swap-rail-track {
+      height: 3px;
+      background: rgba(255,255,255,0.1);
+      border-radius: 2px;
+      overflow: hidden;
+    }
+    .swap-rail-fill {
+      height: 100%;
+      background: var(--red);
+      width: 0%;
+      transition: width 0.4s ease;
+      box-shadow: var(--red-glow);
+    }
+    .swap-rail-count {
+      font-size: 10px;
+      font-weight: var(--fw-semi);
+      color: var(--muted);
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      margin-top: 8px;
+    }
+    .swap-cards-row {
+      display: flex;
+      gap: 20px;
+      align-items: center;
+      justify-content: center;
+    }
+    .swap-card {
+      flex: 1;
+      background: rgba(255,255,255,0.03);
+      border: 1px solid rgba(255,255,255,0.07);
+      border-radius: 8px;
+      padding: 20px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 10px;
+      opacity: 0.35;
+      transition: opacity 0.4s, border-color 0.4s;
+    }
+    .swap-card.is-active {
+      opacity: 1;
+      border-color: rgba(232,0,13,0.4);
+      background: rgba(232,0,13,0.04);
+    }
+    .swap-card.is-done {
+      opacity: 0.6;
+      border-color: rgba(255,255,255,0.15);
+    }
+    .swap-svg { width: 100%; max-width: 160px; height: 160px; }
+    .swap-hint {
+      font-size: 11px;
+      font-weight: var(--fw-semi);
+      color: var(--muted);
+      letter-spacing: 0.08em;
+      text-align: center;
+    }
+    .swap-card-label {
+      font-size: 11px;
+      color: var(--muted);
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+    }
+    .si-target-ring {
+      fill: none;
+      stroke: var(--red);
+      stroke-width: 2;
+      stroke-dasharray: 6 4;
+      opacity: 0.6;
+      animation: spin 8s linear infinite;
+      transform-origin: center;
+    }
+    @keyframes spin { from{transform:rotate(0deg)} to{transform:rotate(360deg)} }
+    .si-drag { cursor: grab; }
+    .si-drag:active { cursor: grabbing; }
+    .si-drag--dragging { cursor: grabbing; filter: drop-shadow(0 0 8px rgba(232,0,13,0.6)); }
+    .si-drag--snapped { opacity: 0; transition: opacity 0.3s; }
+    .si-zip-progress { transition: none; }
+    .swap-final-card {
+      flex: 2;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border: 1px solid rgba(232,0,13,0.25);
+      border-radius: 8px;
+      padding: 40px;
+      background: rgba(232,0,13,0.05);
+      flex-direction: column;
+      gap: 12px;
+      text-align: center;
+    }
+    .swap-final-over {
+      font-size: 10px;
+      font-weight: var(--fw-semi);
+      letter-spacing: 0.2em;
+      text-transform: uppercase;
+      color: var(--red);
+    }
+    .swap-final-headline {
+      font-size: clamp(24px, 2.4vw, 36px);
+      font-weight: var(--fw-black);
+      letter-spacing: -0.025em;
+    }
+    .swap-final-body {
+      font-size: 14px;
+      font-weight: var(--fw-light);
+      color: var(--muted);
+      line-height: 1.6;
+    }
+
+    /* ── Screen-6 layout ──────────────────────────────────────── */
+    .screen-header { padding: 44px 80px 14px; flex-shrink: 0; }
+    .c6-grid {
+      flex: 1;
+      display: grid;
+      grid-template-columns: 290px 1fr;
+      gap: 60px;
+      padding: 12px 80px 56px;
+      overflow: hidden;
+      align-items: start;
+    }
+    .c6-left  { display: flex; flex-direction: column; gap: 18px; }
+    .c6-right { display: flex; flex-direction: column; gap: 14px; }
+    .c6-form-heading {
+      font-size: 10px; font-weight: var(--fw-semi);
+      letter-spacing: 0.2em; text-transform: uppercase; color: var(--muted);
+    }
+    .qr-wrap { display: flex; flex-direction: column; gap: 8px; }
+    #qrImg { width: 200px; height: 200px; border-radius: 4px; background: #131313; display: block; }
+
+    .c6-ids { display: flex; flex-direction: column; gap: 10px; }
+    .c6-id-row { display: flex; flex-direction: column; gap: 2px; }
+    .c6-id-label { font-size: 9px; font-weight: var(--fw-semi); letter-spacing: 0.18em; text-transform: uppercase; color: var(--red); }
+    .c6-id-val { font-size: 13px; font-weight: var(--fw-bold); letter-spacing: 0.06em; color: var(--white); }
+
+    /* ── Lead capture form ───────────────────────────────────── */
+    .kform-row { display: flex; gap: 14px; margin-bottom: 12px; }
+    .kform-group { flex: 1; display: flex; flex-direction: column; gap: 5px; }
+    .kform-label { font-size: 9px; font-weight: var(--fw-semi); letter-spacing: 0.16em; text-transform: uppercase; color: var(--muted); }
+    .kform-input {
+      background: rgba(255,255,255,0.05);
+      border: 1px solid rgba(255,255,255,0.1);
+      border-radius: 4px;
+      color: var(--white);
+      font-family: var(--font);
+      font-size: 14px;
+      padding: 10px 14px;
+      outline: none;
+      transition: border-color 0.2s, background 0.2s;
+      pointer-events: all;
+      cursor: text;
+      -webkit-user-select: text;
+      user-select: text;
+    }
+    .kform-input:focus { border-color: var(--red); background: rgba(232,0,13,0.05); }
+    .kform-input::placeholder { color: rgba(255,255,255,0.2); }
+    .kform-actions { display: flex; gap: 12px; align-items: center; margin-top: 6px; margin-bottom: 4px; }
+    .kform-submit {
+      background: var(--red); color: var(--white); border: none;
+      font-family: var(--font); font-size: 12px; font-weight: var(--fw-semi);
+      letter-spacing: 0.08em; text-transform: uppercase;
+      padding: 12px 24px; cursor: pointer; border-radius: 3px; pointer-events: all;
+      transition: opacity 0.2s;
+    }
+    .kform-submit:hover { opacity: 0.85; }
+    .kform-clear {
+      background: transparent; color: var(--muted);
+      border: 1px solid rgba(255,255,255,0.12);
+      font-family: var(--font); font-size: 11px; font-weight: var(--fw-semi);
+      letter-spacing: 0.06em; padding: 12px 18px; cursor: pointer;
+      border-radius: 3px; pointer-events: all;
+      transition: border-color 0.2s, color 0.2s;
+    }
+    .kform-clear:hover { border-color: rgba(255,255,255,0.3); color: var(--white); }
+    .kform-ghost {
+      background: transparent; color: rgba(255,255,255,0.3);
+      border: 1px solid rgba(255,255,255,0.1);
+      font-family: var(--font); font-size: 10px; font-weight: var(--fw-semi);
+      letter-spacing: 0.1em; padding: 9px 16px; cursor: pointer;
+      border-radius: 3px; pointer-events: all; text-transform: uppercase;
+      align-self: flex-start;
+    }
+    .kform-error { color: var(--red); font-size: 11px; letter-spacing: 0.04em; }
+    .kform-success {
+      align-items: center; gap: 10px;
+      padding: 12px 16px;
+      background: rgba(0,200,117,0.08);
+      border: 1px solid rgba(0,200,117,0.25);
+      border-radius: 4px;
+    }
+    .kform-success-icon { color: #00c875; font-size: 18px; }
+    .kform-success span:last-child { font-size: 13px; color: rgba(255,255,255,0.65); }
+
+    /* ── Touch baseline ───────────────────────────────────────────── */
+    *, *::before, *::after { -webkit-tap-highlight-color: transparent; }
+    button, .wcard, .hero-cta, .model-thumb, .contact-replay,
+    .kform-submit, .kform-clear, .kform-ghost, .hud-dot {
+      touch-action: manipulation;
+    }
+    /* Expand HUD dot hit areas */
+    .hud-dot { position: relative; }
+    .hud-dot::before { content: ''; position: absolute; inset: -10px; }
+
+    /* HUD logo as home-button */
+    #hud-logo-btn {
+      background: none; border: none; cursor: pointer; padding: 4px 0;
+      pointer-events: all; line-height: 0;
+      transition: opacity 0.2s;
+    }
+    #hud-logo-btn:active { opacity: 0.55; }
+
+    /* Bottom hint — swipe label (hidden on desktop, shown on Pi/touch) */
+    #keyhint-swipe { display: none; }
+    html.is-pi #keyhint-keys,
+    html.is-pi #keyhint-num  { display: none; }
+    html.is-pi #keyhint-swipe { display: flex; }
+
+    /* ── Pi Zero speed optimisations ─────────────────────────────── */
+    html.pi-zero .screen {
+      transition-duration: 0.22s !important;
+    }
+    html.pi-zero model-viewer,
+    html.pi-zero .model-progress-bar,
+    html.pi-zero .model-thumb-row { display: none !important; }
+    html.pi-zero .pi-fallback {
+      display: flex !important;
+      width: 100%; justify-content: center; align-items: center;
+    }
+
+    /* ── Welcome overlay ─────────────────────────────────────────── */
+    #welcome-overlay {
+      position: fixed; inset: 0; z-index: 1000;
+      background: var(--black);
+      display: flex; flex-direction: column;
+      align-items: center; justify-content: center;
+      padding: 56px 48px 36px;
+      opacity: 0; pointer-events: none;
+      transition: opacity 0.4s ease;
+    }
+    #welcome-overlay.is-visible { opacity: 1; pointer-events: all; }
+    .welcome-logo { height: 26px; margin-bottom: 22px; opacity: 0.9; }
+    .welcome-headline {
+      font-size: clamp(18px, 2.8vw, 38px);
+      font-weight: var(--fw-black); line-height: 1.15;
+      text-align: center; color: var(--white); margin-bottom: 8px;
+    }
+    .welcome-prompt {
+      font-size: 11px; letter-spacing: 0.22em; text-transform: uppercase;
+      color: var(--muted); margin-bottom: 28px;
+    }
+    .welcome-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 14px; width: 100%; max-width: 1200px;
+    }
+    @media (max-width: 900px) {
+      .welcome-grid { grid-template-columns: repeat(2, 1fr); }
+      #welcome-overlay { padding: 56px 20px 28px; }
+    }
+    .wcard {
+      background: rgba(255,255,255,0.04);
+      border: 1px solid rgba(255,255,255,0.09);
+      border-radius: 8px; padding: 22px 18px;
+      display: flex; flex-direction: column; gap: 6px;
+      cursor: pointer; text-align: left;
+      color: var(--white); font-family: var(--font);
+      touch-action: manipulation; user-select: none;
+      transition: background 0.18s, border-color 0.18s, transform 0.1s;
+      min-height: 96px;
+    }
+    .wcard:hover  { background: rgba(255,255,255,0.07); border-color: rgba(255,255,255,0.2); }
+    .wcard:active { background: rgba(232,0,13,0.13); border-color: var(--red); transform: scale(0.96); }
+    .wcard-num   { font-size: 9px; font-weight: var(--fw-semi); letter-spacing: 0.22em; color: var(--red); }
+    .wcard-title { font-size: clamp(12px, 1.1vw, 14px); font-weight: var(--fw-bold); line-height: 1.2; }
+    .wcard-sub   { font-size: 10px; color: var(--muted); }
+    .welcome-swipe {
+      margin-top: 18px; font-size: 10px;
+      color: rgba(255,255,255,0.2); letter-spacing: 0.1em; text-transform: uppercase;
+    }
+  </style>
+</head>
+<body>
+
+<div id="app">
+
+  <!-- ── HUD ─────────────────────────────────────────────── -->
+  <div id="hud">
+    <button id="hud-logo-btn" aria-label="Return to home">
+      <img id="hud-logo" src="assets/Precisian_White_Text_Logo.png" alt="PMI" />
+    </button>
+    <div id="hud-nav"></div>
+    <span id="hud-keys">PMI VACTOR</span>
+  </div>
+
+  <!-- ── Key hint bar ────────────────────────────────────── -->
+  <div id="keyhint">
+    <span class="key-item" id="keyhint-swipe">← Swipe to navigate →</span>
+    <span class="key-item" id="keyhint-keys">
+      <span class="key-badge">←</span>
+      <span class="key-badge">→</span>
+      Navigate
+    </span>
+    <span class="key-item" id="keyhint-num">
+      <span class="key-badge is-red">1</span>&hairsp;–&hairsp;<span class="key-badge is-red">7</span>
+      Jump to screen
+    </span>
+  </div>
+
+  <!-- ════════════════════════════════════════════════════
+       SCREEN INTRO — TAGLINE
+  ════════════════════════════════════════════════════ -->
+  <section class="screen section-bg-dark" id="screen-intro">
+    <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;height:100%;gap:48px;padding:80px 60px 60px;text-align:center;">
+      <p style="font-size:11px;font-weight:var(--fw-semi);letter-spacing:0.24em;text-transform:uppercase;color:var(--red);">Precisian Medical Instruments</p>
+      <h1 style="font-size:clamp(36px,5.5vw,80px);font-weight:var(--fw-black);line-height:1.1;max-width:880px;color:var(--white);">
+        Pocket sized airway management<br>for point of injury care
+      </h1>
+      <button class="hero-cta" id="intro-cta-btn">
+        See the System &nbsp;→
+      </button>
+    </div>
+  </section>
+
+  <!-- ════════════════════════════════════════════════════
+       SCREEN 0 — HERO
+  ════════════════════════════════════════════════════ -->
+  <section class="screen section-bg-dark" id="screen-0">
+    <div class="hero-inner">
+      <div class="hero-text">
+        <p class="hero-eyebrow">Precisian Medical Instruments</p>
+        <div class="hero-verb-stack">
+          <div class="hero-verb-row">
+            <span>Reduce</span>
+            <span class="hero-verb-sep"> —&nbsp;</span>
+            <span class="hero-cycle" id="cycleReduce" data-words="Complexity,Constraints,Weight,Lulls">Complexity</span>
+          </div>
+          <div class="hero-verb-row">
+            <span>Elevate</span>
+            <span class="hero-verb-sep"> —&nbsp;</span>
+            <span class="hero-cycle" id="cycleElevate" data-words="Clarity,Awareness,Capability,Treatment">Clarity</span>
+          </div>
+        </div>
+        <p class="hero-sub">
+          Providing divergence, disrupting stagnance.<br>
+          Medical devices reimagined.<br>
+          Precisian foundation.
+        </p>
+        <div class="hero-cta" style="visibility:hidden;">
+          See the System &nbsp;→&nbsp; Press <strong>→</strong> or <strong>2</strong>
+        </div>
+      </div>
+      <div class="hero-visual">
+        <img src="assets/Spaceman.png" alt="PMI VACTOR" />
+      </div>
+    </div>
+  </section>
+
+  <!-- ════════════════════════════════════════════════════
+       SCREEN 1 — THE PROBLEM
+  ════════════════════════════════════════════════════ -->
+  <section class="screen section-bg-dark" id="screen-1">
+    <div class="problem-layout" style="padding-top:80px;">
+      <div>
+        <p class="label">The Problem</p>
+        <h2 class="headline" style="font-size:clamp(36px,4vw,64px);">
+          When suction<br>fails,<br><span style="color:var(--red)">patients die.</span>
+        </h2>
+        <p class="subhead">Conventional suction was not built for austere environments. VACTOR was.</p>
+      </div>
+      <ul class="problem-list" id="problemList">
+        <li class="problem-item">
+          <span class="p-num">01</span>
+          <p class="p-text">Conventional suction requires a stable power source — unavailable in austere, mobile, or forward-deployed environments.</p>
+        </li>
+        <li class="problem-item">
+          <span class="p-num">02</span>
+          <p class="p-text">Bulky, fragile equipment slows deployment when seconds determine who survives.</p>
+        </li>
+        <li class="problem-item">
+          <span class="p-num">03</span>
+          <p class="p-text">Single-use limitations and contamination risk make resupply a critical tactical vulnerability.</p>
+        </li>
+        <li class="problem-item">
+          <span class="p-num">04</span>
+          <p class="p-text">No purpose-built portable tool exists for medical-grade suction at the point of injury — until now.</p>
+        </li>
+      </ul>
+    </div>
+  </section>
+
+  <!-- ════════════════════════════════════════════════════
+       SCREEN 2 — THE SYSTEM (3D model)
+  ════════════════════════════════════════════════════ -->
+  <section class="screen section-bg-dark" id="screen-2">
+    <div class="system-layout">
+      <div class="system-model-col">
+        <p class="label" style="margin-bottom:12px;">The System</p>
+        <!-- Pi Zero: model-viewer hidden by CSS; show static image instead -->
+        <div class="pi-fallback" style="display:none;">
+          <img src="assets/PREC_Vactor_Development.39.png" alt="VACTOR System"
+               style="max-height:55vh;max-width:100%;object-fit:contain;" />
+        </div>
+        <model-viewer
+          id="vactor-model"
+          src="assets/PREC_Vactor_Pump_Assembly_-_03232026.glb"
+          alt="Interactive 3D model of the VACTOR pump assembly"
+          camera-controls
+          auto-rotate
+          auto-rotate-delay="800"
+          rotation-per-second="18deg"
+          shadow-intensity="1.2"
+          shadow-softness="0.8"
+          environment-image="neutral"
+          exposure="1.1"
+          interaction-prompt="auto"
+          loading="eager">
+          <div slot="progress-bar" class="model-progress-bar">
+            <div class="model-progress-fill" id="modelFill"></div>
+          </div>
+        </model-viewer>
+        <div class="model-thumb-row">
+          <img class="model-thumb" src="assets/PREC_Vactor_Development.19.png"
+               alt="VACTOR front view" data-full="assets/PREC_Vactor_Development.19.png" />
+          <img class="model-thumb" src="assets/PREC_Vactor_Development.39.png"
+               alt="VACTOR exploded view" data-full="assets/PREC_Vactor_Development.39.png" />
+        </div>
+        <p style="font-size:10px;color:var(--muted);margin-top:10px;letter-spacing:0.08em;">
+          DRAG TO ROTATE &nbsp;·&nbsp; SCROLL TO ZOOM
+        </p>
+      </div>
+      <div class="system-anno-col">
+        <div>
+          <p class="label">VACTOR + Pump Head</p>
+          <h2 class="headline" style="font-size:clamp(28px,3vw,48px);">One integrated<br><span style="color:var(--red)">system.</span></h2>
+        </div>
+        <div class="anno-card">
+          <span class="anno-num">①</span>
+          <div>
+            <p class="anno-title">VACTOR Suction Device</p>
+            <p class="anno-body">The main unit. Durable, portable, built to surgical tolerance for reliable performance in any environment — from the OR to the battlefield.</p>
+          </div>
+        </div>
+        <div class="anno-card">
+          <span class="anno-num">②</span>
+          <div>
+            <p class="anno-title">Swappable Pump Head</p>
+            <p class="anno-body">The critical consumable. Field-replaceable in seconds. Clear a clog, treat a new patient, or prepare for the next call with a fresh pump head.</p>
+          </div>
+        </div>
+        <div class="anno-card">
+          <span class="anno-num">③</span>
+          <div>
+            <p class="anno-title">One Integrated System</p>
+            <p class="anno-body">Swap the head, maintain the mission. No tools. No downtime. No failure mode.</p>
+          </div>
+        </div>
+        <div class="anno-card">
+          <span class="anno-num">⬡</span>
+          <div>
+            <p class="anno-title">Built to Survive the Mission</p>
+            <div class="spec-badges">
+              <span class="spec-badge">IP67</span>
+              <span class="spec-badge">MIL-STD-810H</span>
+            </div>
+            <p class="anno-body" style="margin-top:8px;">Dust-tight. Waterproof. Tested to military standard for shock, vibration, temperature extremes, altitude, and immersion.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ════════════════════════════════════════════════════
+       SCREEN 3 — HOW IT WORKS
+  ════════════════════════════════════════════════════ -->
+  <section class="screen section-bg-mid" id="screen-3">
+    <div style="padding:60px 80px 20px;">
+      <p class="label">How It Works</p>
+      <h2 class="headline" style="font-size:clamp(32px,3.5vw,56px);">Four steps. <span style="color:var(--red)">Zero hesitation.</span></h2>
+    </div>
+    <div class="steps-layout" style="padding-bottom:60px;">
+      <div class="step-card">
+        <span class="step-num">01</span>
+        <div>
+          <p class="step-title">Deploy</p>
+          <p class="step-body">Unpack from kit. VACTOR is configured and ready for use within seconds — no assembly, no setup delay when time is the variable.</p>
+        </div>
+      </div>
+      <div class="step-card">
+        <span class="step-num">02</span>
+        <div>
+          <p class="step-title">Seat the Pump Head</p>
+          <p class="step-body">Attach the pump head with a single-click lock. Tactile confirmation. Designed to be done under stress, in the dark, with gloves on.</p>
+        </div>
+      </div>
+      <div class="step-card">
+        <span class="step-num">03</span>
+        <div>
+          <p class="step-title">Activate</p>
+          <p class="step-body">Power on. Begin medical-grade aspiration immediately. Consistent, reliable suction across all operating conditions without a power grid.</p>
+        </div>
+      </div>
+      <div class="step-card">
+        <span class="step-num">04</span>
+        <div>
+          <p class="step-title">Clear</p>
+          <p class="step-body">Maintain a clear airway or surgical field. Replace the pump head in the field and continue operations. The mission does not pause.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ════════════════════════════════════════════════════
+       SCREEN 3b — THREE-SECOND SWAP (interactive)
+  ════════════════════════════════════════════════════ -->
+  <section class="screen section-bg-dark" id="screen-3b">
+    <div class="swap-inner">
+      <div class="swap-left">
+        <p class="label">The Pump Head</p>
+        <h2 class="swap-headline-sm">A three-second swap.</h2>
+        <p class="swap-subtext">As easy as everyday life. Drag each item to complete the interaction.</p>
+        <div class="swap-rail-wrap">
+          <div class="swap-rail-track"><div class="swap-rail-fill" id="swapFill"></div></div>
+          <p class="swap-rail-count" id="swapCount">1 / 3</p>
+        </div>
+      </div>
+      <div class="swap-cards-row" id="swapRow">
+        <!-- Card 0: Sock → foot -->
+        <div class="swap-card is-active" data-swap-index="0">
+          <p class="swap-hint">Drag the sock onto the foot</p>
+          <svg class="swap-svg" viewBox="0 0 220 240" xmlns="http://www.w3.org/2000/svg">
+            <g transform="translate(0,7) scale(0.36)" fill="none" stroke="#666"
+               stroke-width="6" stroke-miterlimit="10" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M234.93,270.88c-4.39,30.83,12.73,109.79,14.85,139.97c2.12,30.18,7.56,89.58,18.1,116.32
+                       c10.57,26.83,20.6,37.2,48.16,37.46c22.43,0.22,41.59-16.37,47.73-37.46c6.87-23.6-14.34-93.2-13.43-116.32
+                       c1.54-38.97,20.37-60.83,24.47-90.97c3.58-26.34,6.64-80.91-7.86-88.1c-12.11-6.01-22.77,9.53-35.11-1.3
+                       c-13.85-12.15-18.39,15.45-30.64,9.05c-16.2-8.46-14.91,15.42-26.46,9.39c-17.83-9.31-13.12,13.67-21.43,9.72
+                       C238.17,251.45,236.18,262.07,234.93,270.88z"/>
+              <path d="M263.15,262.88c0,0-2.28-10.6,5.84-10.6c7.15,0,5.84,10.6,5.84,10.6l-5.84,1.99L263.15,262.88z"/>
+              <path d="M240.94,273.32c0,0-1.72-8,4.41-8c5.4,0,4.41,8,4.41,8l-4.41,1.5L240.94,273.32z"/>
+              <path d="M288.68,254.04c0,0-2.67-12.65,6.85-12.65c8.39,0,6.85,12.65,6.85,12.65l-6.85,2.37L288.68,254.04z"/>
+              <path d="M317.91,244.29c0,0-2.94-12.91,7.56-12.91c9.26,0,7.56,12.91,7.56,12.91l-7.56,2.42L317.91,244.29z"/>
+              <path d="M344.96,261.02c0,0-5.22-24.34,13.42-24.34c16.43,0,13.42,24.34,13.42,24.34l-13.42,4.56L344.96,261.02z"/>
+            </g>
+            <circle class="si-target-ring" cx="110" cy="165" r="28"/>
+            <g class="si-drag" transform="translate(170,55)"
+               data-sx="170" data-sy="55" data-tx="110" data-ty="165" data-snap="32">
+              <rect x="-32" y="-88" width="64" height="158" fill="transparent"/>
+              <g transform="translate(-122,-176) scale(0.40)" fill="none" stroke="#E8000D"
+                 stroke-width="8" stroke-miterlimit="10" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M245.98,275.32c21.57-17.43,80.02-29.09,115.01-12.06"/>
+                <path d="M246.68,610.29c0,0-18.29-228.58-18.29-338.91c0-30.87,72.05-40.11,116.02-43.42
+                         c10.93-0.82,38.08,11.16,38.36,20.11c4.16,129.25-8.61,362.22-8.61,362.22H246.68z"/>
+                <line x1="244.52" y1="582.31" x2="375.59" y2="582.31"/>
+                <line x1="243.89" y1="595.03" x2="374.96" y2="595.03"/>
+              </g>
+            </g>
+          </svg>
+          <p class="swap-card-label">Pull on a sock</p>
+        </div>
+
+        <!-- Card 1: Zipper -->
+        <div class="swap-card" data-swap-index="1">
+          <p class="swap-hint">Drag the pull tab up to zip</p>
+          <svg class="swap-svg" viewBox="0 0 220 240" xmlns="http://www.w3.org/2000/svg">
+            <path d="M10 228 L10 30 Q10 20 26 18 L90 30 L90 228 Z" fill="#1e1e1e" stroke="#444" stroke-width="2"/>
+            <path d="M210 228 L210 30 Q210 20 194 18 L130 30 L130 228 Z" fill="#1e1e1e" stroke="#444" stroke-width="2"/>
+            <path d="M90 30 L110 56 L130 30" fill="none" stroke="#555" stroke-width="2"/>
+            <rect x="20" y="140" width="52" height="32" rx="4" fill="none" stroke="#333" stroke-width="1.5" stroke-dasharray="4 3"/>
+            <rect x="148" y="140" width="52" height="32" rx="4" fill="none" stroke="#333" stroke-width="1.5" stroke-dasharray="4 3"/>
+            <line x1="110" y1="56" x2="110" y2="218" stroke="#2a2a2a" stroke-width="2" stroke-dasharray="5 4"/>
+            <circle cx="110" cy="218" r="5" fill="#2a2a2a" stroke="#444" stroke-width="1.5"/>
+            <line class="si-zip-progress" x1="110" y1="56" x2="110" y2="56"
+                  stroke="#E8000D" stroke-width="3" stroke-linecap="round" opacity="0.8"/>
+            <circle class="si-target-ring" cx="110" cy="58" r="26"/>
+            <g class="si-drag" transform="translate(110,206)"
+               data-sx="110" data-sy="206" data-tx="110" data-ty="58" data-snap="44" data-type="vertical">
+              <rect x="-22" y="-30" width="44" height="60" fill="transparent"/>
+              <rect x="-14" y="-10" width="28" height="18" rx="4" fill="#1e1e1e" stroke="#E8000D" stroke-width="2.5"/>
+              <rect x="-8" y="-28" width="16" height="20" rx="4" fill="none" stroke="#E8000D" stroke-width="2.5"/>
+              <circle cx="0" cy="-18" r="3" fill="#E8000D" opacity="0.8"/>
+            </g>
+          </svg>
+          <p class="swap-card-label">Zip a jacket</p>
+        </div>
+
+        <!-- Card 2: Razor -->
+        <div class="swap-card" data-swap-index="2">
+          <p class="swap-hint">Snap the new blade onto the handle</p>
+          <svg class="swap-svg" viewBox="0 0 220 240" xmlns="http://www.w3.org/2000/svg">
+            <rect x="98" y="88" width="24" height="128" rx="10" fill="#1e1e1e" stroke="#444" stroke-width="2"/>
+            <line x1="98" y1="116" x2="122" y2="116" stroke="#2a2a2a" stroke-width="2"/>
+            <line x1="98" y1="130" x2="122" y2="130" stroke="#2a2a2a" stroke-width="2"/>
+            <line x1="98" y1="144" x2="122" y2="144" stroke="#2a2a2a" stroke-width="2"/>
+            <line x1="98" y1="158" x2="122" y2="158" stroke="#2a2a2a" stroke-width="2"/>
+            <line x1="98" y1="172" x2="122" y2="172" stroke="#2a2a2a" stroke-width="2"/>
+            <line x1="98" y1="186" x2="122" y2="186" stroke="#2a2a2a" stroke-width="2"/>
+            <rect x="104" y="70" width="12" height="22" rx="4" fill="#1e1e1e" stroke="#444" stroke-width="2"/>
+            <rect x="90" y="56" width="40" height="18" rx="5" fill="#252525" stroke="#555" stroke-width="2"/>
+            <g opacity="0.3">
+              <rect x="28" y="24" width="64" height="26" rx="6" fill="#1a1a1a" stroke="#555" stroke-width="1.5" stroke-dasharray="4 3"/>
+              <line x1="34" y1="33" x2="86" y2="33" stroke="#555" stroke-width="1.5"/>
+              <line x1="34" y1="40" x2="86" y2="40" stroke="#555" stroke-width="1.5"/>
+            </g>
+            <circle class="si-target-ring" cx="110" cy="65" r="30"/>
+            <g class="si-drag" transform="translate(148,176)"
+               data-sx="148" data-sy="176" data-tx="110" data-ty="65" data-snap="34">
+              <rect x="-40" y="-18" width="80" height="36" fill="transparent"/>
+              <rect x="-34" y="-12" width="68" height="24" rx="6" fill="#1e1e1e" stroke="#E8000D" stroke-width="2.5"/>
+              <line x1="-28" y1="-2" x2="28" y2="-2" stroke="#E8000D" stroke-width="2" stroke-linecap="round"/>
+              <line x1="-28" y1="5" x2="28" y2="5" stroke="rgba(232,0,13,0.5)" stroke-width="1.5" stroke-linecap="round"/>
+              <rect x="-34" y="-12" width="8" height="24" rx="3" fill="#111" stroke="#E8000D" stroke-width="1.5"/>
+              <rect x="26" y="-12" width="8" height="24" rx="3" fill="#111" stroke="#E8000D" stroke-width="1.5"/>
+              <text x="0" y="24" font-size="8" fill="#E8000D" text-anchor="middle"
+                    font-family="Inter,sans-serif" letter-spacing="0.12em" opacity="0.8">NEW BLADE</text>
+            </g>
+          </svg>
+          <p class="swap-card-label">Swap a razor cartridge</p>
+        </div>
+
+        <!-- Final panel -->
+        <div class="swap-final-card" id="swapFinal" style="display:none;">
+          <p class="swap-final-over">The VACTOR Pump Head</p>
+          <p class="swap-final-headline">Three-Second Swap.</p>
+          <p class="swap-final-body">As easy as everyday life.<br>Built for when care cannot stop.</p>
+          <button class="contact-replay" id="swapReplay" onclick="resetSwap()">↺ Replay</button>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ════════════════════════════════════════════════════
+       SCREEN 4 — WHO IT'S FOR
+  ════════════════════════════════════════════════════ -->
+  <section class="screen section-bg-light" id="screen-4">
+    <div style="padding: 28px 80px 14px;">
+      <p class="label">Who It's For</p>
+      <h2 class="headline section-bg-light" style="font-size:clamp(28px,3vw,48px);color:var(--black);">Forward of the ER.</h2>
+    </div>
+    <div class="who-layout" style="flex:1;">
+      <div class="who-col">
+        <div class="who-img-wrap">
+          <img src="assets/images/MILITARY1.png" alt="Military" class="is-active" />
+          <img src="assets/images/MILITARY2.jpeg" alt="Military field" />
+          <img src="assets/images/MILITARY3.jpeg" alt="Combat medic" />
+          <img src="assets/images/MILITARY4.jpeg" alt="Military medical" />
+        </div>
+        <div class="who-body">
+          <p class="who-title">Military</p>
+          <p class="who-text">Direct action environments. Operates under fire with no resupply window, no power infrastructure, and zero margin for equipment failure.</p>
+        </div>
+      </div>
+      <div class="who-col">
+        <div class="who-img-wrap">
+          <img src="assets/images/EMS1.JPG" alt="EMS" class="is-active" />
+          <img src="assets/images/EMS2.JPG" alt="Flight medic" />
+          <img src="assets/images/EMS3.PNG" alt="EMS field" />
+          <img src="assets/images/EMS4.jpeg" alt="Paramedic" />
+          <img src="assets/images/EMS5.jpeg" alt="EMS team" />
+        </div>
+        <div class="who-body">
+          <p class="who-title">First Responders</p>
+          <p class="who-text">Airway management at altitude, in the wild, and in motion. Compact equipment, absolute reliability, no opportunity to stop and troubleshoot.</p>
+        </div>
+      </div>
+      <div class="who-col">
+        <div class="who-img-wrap">
+          <img src="assets/images/SURGEON1.png" alt="Surgeon" class="is-active" />
+          <img src="assets/images/SURGEON2.jpeg" alt="Surgical team" />
+        </div>
+        <div class="who-body">
+          <p class="who-title">Emergency Surgeons</p>
+          <p class="who-text">Surgical precision demanded outside the OR. VACTOR delivers the suction performance required for procedural care under any austere condition.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ════════════════════════════════════════════════════
+       SCREEN 5 — ABOUT PMI
+  ════════════════════════════════════════════════════ -->
+  <section class="screen section-bg-dark" id="screen-5">
+    <div class="about-layout" style="height:100%;">
+      <div>
+        <p class="label">About PMI</p>
+        <h2 class="headline" style="font-size:clamp(32px,3.5vw,56px);">Designed for the<br><span style="color:var(--red)">gap no one filled.</span></h2>
+        <p class="about-body-text">
+          Precisian Medical Instruments was founded to close the distance between
+          life-saving intent and life-saving capability. We build medical tools
+          for operators who are first on scene, furthest from the hospital, and
+          completely unwilling to accept failure as an option.
+        </p>
+        <p class="about-body-text">
+          The VACTOR system is our answer to a problem that has existed on the
+          battlefield and in austere medical settings for as long as operators
+          have needed medical-grade care outside of an operating room.
+        </p>
+        <div class="about-ids">
+          <div class="about-id-row">
+            <span class="about-id-label">Unique Entity ID</span>
+            <span class="about-id-val">QPNRYXH78YN8</span>
+          </div>
+          <div class="about-id-row">
+            <span class="about-id-label">CAGE / NCAGE</span>
+            <span class="about-id-val">17H50</span>
+          </div>
+        </div>
+      </div>
+      <div class="about-visual">
+        <img src="assets/Spaceman.png" alt="" />
+      </div>
+    </div>
+  </section>
+
+  <!-- ════════════════════════════════════════════════════
+       SCREEN 6 — CONTACT
+  ════════════════════════════════════════════════════ -->
+  <section class="screen section-bg-dark" id="screen-6">
+
+    <div class="screen-header">
+      <p class="label">Get In Touch</p>
+      <h2 class="headline" style="font-size:clamp(26px,2.6vw,42px);">
+        Ready to equip <span style="color:var(--red)">your team?</span>
+      </h2>
+    </div>
+
+    <div class="c6-grid">
+
+      <!-- Left: QR code + contact info -->
+      <div class="c6-left">
+        <p class="contact-sub">Scan to visit our site, or capture their details below.</p>
+
+        <div class="qr-wrap">
+          <img id="qrImg" src="" alt="QR — precisianmedical.com" />
+          <p class="qr-caption">precisianmedical.com/#contact</p>
+        </div>
+
+        <div class="c6-ids">
+          <div class="c6-id-row">
+            <span class="c6-id-label">Email</span>
+            <span class="c6-id-val" style="font-size:12px;letter-spacing:0.03em;">ask@precisianmedical.com</span>
+          </div>
+          <div class="c6-id-row">
+            <span class="c6-id-label">Unique Entity ID</span>
+            <span class="c6-id-val">QPNRYXH78YN8</span>
+          </div>
+          <div class="c6-id-row">
+            <span class="c6-id-label">CAGE / NCAGE</span>
+            <span class="c6-id-val">17H50</span>
+          </div>
+        </div>
+
+        <button class="kform-ghost" onclick="goToScreen(0)">↩ Return to Start</button>
+      </div>
+
+      <!-- Right: Lead capture form -->
+      <div class="c6-right">
+        <p class="c6-form-heading">Capture Contact Details</p>
+        <form id="leadForm" autocomplete="off" onsubmit="return false;">
+
+          <div class="kform-row">
+            <div class="kform-group">
+              <label class="kform-label" for="lName">Full Name *</label>
+              <input class="kform-input" type="text" id="lName" placeholder="Jane Smith" />
+            </div>
+            <div class="kform-group">
+              <label class="kform-label" for="lOrg">Organization *</label>
+              <input class="kform-input" type="text" id="lOrg" placeholder="Unit / Agency / Company" />
+            </div>
+          </div>
+
+          <div class="kform-row">
+            <div class="kform-group">
+              <label class="kform-label" for="lRole">Role / Title</label>
+              <input class="kform-input" type="text" id="lRole" placeholder="Medic / Procurement / Distributor" />
+            </div>
+            <div class="kform-group">
+              <label class="kform-label" for="lEmail">Email</label>
+              <input class="kform-input" type="email" id="lEmail" placeholder="you@example.com" />
+            </div>
+          </div>
+
+          <div class="kform-row" style="max-width:50%;">
+            <div class="kform-group">
+              <label class="kform-label" for="lPhone">Phone</label>
+              <input class="kform-input" type="tel" id="lPhone" placeholder="+1 (555) 000-0000" />
+            </div>
+          </div>
+
+          <div class="kform-actions">
+            <button type="button" class="kform-submit" id="leadSubmit">Save Contact &nbsp;→</button>
+            <button type="button" class="kform-clear" id="leadClear">Clear</button>
+          </div>
+
+          <p id="leadError" class="kform-error" style="display:none;">Please enter at least a name and organization.</p>
+          <div id="leadSuccess" class="kform-success" style="display:none;">
+            <span class="kform-success-icon">✓</span>
+            <span>Contact saved — ready for the next visitor.</span>
+          </div>
+
+        </form>
+      </div>
+
+    </div>
+  </section>
+
+</div><!-- /#app -->
+
+<!-- Lightbox -->
+<div id="lightbox">
+  <img id="lbImg" src="" alt="" />
+</div>
+
+<!-- model-viewer: loaded dynamically, skipped on Pi Zero to save memory & startup time -->
+<script>
+  if (!document.documentElement.classList.contains('pi-zero')) {
+    var _mv = document.createElement('script');
+    _mv.type = 'module';
+    _mv.src = 'https://ajax.googleapis.com/ajax/libs/model-viewer/3.5.0/model-viewer.min.js';
+    document.currentScript.replaceWith(_mv);
+  }
+</script>
+
+<script>
+/* ============================================================
+   PMI KIOSK — kiosk.js (inlined)
+   Keyboard navigation + swap interactions
+   ============================================================ */
+
+const SCREEN_IDS = [
+  'screen-intro', // 1 — Tagline
+  'screen-0',   // 2 — Hero
+  'screen-1',   // 3 — Problem
+  'screen-2',   // 4 — System / 3D
+  'screen-3',   // 5 — How It Works
+  'screen-3b',  // 6 — 3-Second Swap
+  'screen-4',   // 7 — Who It's For
+  'screen-5',   // 8 — About
+  'screen-6',   // 9 — Contact
+];
+
+let currentScreen = 0;
+let prevScreen = -1;
+
+// ── Build HUD dots ─────────────────────────────────────────
+const hudNav = document.getElementById('hud-nav');
+SCREEN_IDS.forEach((_, i) => {
+  const d = document.createElement('div');
+  d.className = 'hud-dot';
+  d.id = `dot-${i}`;
+  hudNav.appendChild(d);
+});
+
+function goToScreen(idx) {
+  if (idx < 0 || idx >= SCREEN_IDS.length) return;
+  if (idx === currentScreen) return;
+
+  const prev = document.getElementById(SCREEN_IDS[currentScreen]);
+  if (prev) {
+    prev.classList.remove('is-active');
+    prev.classList.add('is-prev');
+    setTimeout(() => prev.classList.remove('is-prev'), 600);
+  }
+  if (prevScreen >= 0) {
+    const old = document.getElementById(`dot-${prevScreen}`);
+    if (old) old.classList.remove('is-active');
+  }
+  const oldDot = document.getElementById(`dot-${currentScreen}`);
+  if (oldDot) oldDot.classList.remove('is-active');
+
+  prevScreen = currentScreen;
+  currentScreen = idx;
+
+  const next = document.getElementById(SCREEN_IDS[currentScreen]);
+  if (next) {
+    next.style.transform = 'translateX(60px)';
+    next.classList.add('is-active');
+    requestAnimationFrame(() => {
+      requestAnimationFrame(() => {
+        next.style.transform = '';
+      });
+    });
+  }
+
+  const dot = document.getElementById(`dot-${currentScreen}`);
+  if (dot) dot.classList.add('is-active');
+
+  // Trigger problem items stagger on screen 1
+  if (currentScreen === 1) {
+    document.querySelectorAll('.problem-item').forEach((el, i) => {
+      el.classList.remove('show');
+      setTimeout(() => el.classList.add('show'), 120 + i * 110);
+    });
+  }
+  // Reinit who-card slideshows
+  if (currentScreen === 5) startWhoSlide();
+}
+
+// Init first screen
+goToScreen(0);
+
+// ── Keyboard handler ───────────────────────────────────────
+document.addEventListener('keydown', e => {
+  // Don't intercept keys while a form input has focus
+  const tag = document.activeElement && document.activeElement.tagName;
+  if (tag === 'INPUT' || tag === 'TEXTAREA') return;
+
+  switch (e.key) {
+    case 'ArrowRight':
+    case 'ArrowDown':
+      goToScreen(currentScreen + 1);
+      break;
+    case 'ArrowLeft':
+    case 'ArrowUp':
+      goToScreen(currentScreen - 1);
+      break;
+    case '1': goToScreen(0); break;
+    case '2': goToScreen(1); break;
+    case '3': goToScreen(2); break;
+    case '4': goToScreen(3); break;
+    case '5': goToScreen(4); break;
+    case '6': goToScreen(5); break;
+    case '7': goToScreen(6); break;
+    case '8': goToScreen(7); break;
+    case 'f':
+    case 'F': document.getElementById('lightbox').classList.remove('is-open'); break;
+  }
+});
+
+// ── Model-viewer progress ──────────────────────────────────
+const vm = document.getElementById('vactor-model');
+const mf = document.getElementById('modelFill');
+if (vm && mf) {
+  vm.addEventListener('progress', e => {
+    mf.style.width = Math.round(e.detail.totalProgress * 100) + '%';
+  });
+  vm.addEventListener('load', () => {
+    mf.parentElement.style.opacity = '0';
+  });
+}
+
+// ── Lightbox for model thumbnails ─────────────────────────
+document.querySelectorAll('.model-thumb').forEach(img => {
+  img.addEventListener('click', () => {
+    const lb = document.getElementById('lightbox');
+    document.getElementById('lbImg').src = img.dataset.full;
+    lb.classList.add('is-open');
+  });
+});
+document.getElementById('lightbox').addEventListener('click', () => {
+  document.getElementById('lightbox').classList.remove('is-open');
+});
+
+// ── Hero word cycler ───────────────────────────────────────
+function startCycler(el) {
+  const words = el.dataset.words.split(',');
+  let i = 0;
+  setInterval(() => {
+    el.style.opacity = '0';
+    el.style.transform = 'translateY(-8px)';
+    setTimeout(() => {
+      i = (i + 1) % words.length;
+      el.textContent = words[i];
+      el.style.transition = 'opacity 0.35s ease, transform 0.35s ease';
+      el.style.opacity = '1';
+      el.style.transform = 'translateY(0)';
+    }, 350);
+  }, 2400);
+}
+document.querySelectorAll('.hero-cycle').forEach(startCycler);
+
+// ── Who It's For image slideshow ───────────────────────────
+let whoTimers = [];
+function startWhoSlide() {
+  whoTimers.forEach(clearInterval);
+  whoTimers = [];
+  document.querySelectorAll('.who-img-wrap').forEach(wrap => {
+    const imgs = Array.from(wrap.querySelectorAll('img'));
+    if (imgs.length < 2) return;
+    let ci = 0;
+    const t = setInterval(() => {
+      imgs[ci].classList.remove('is-active');
+      ci = (ci + 1) % imgs.length;
+      imgs[ci].classList.add('is-active');
+    }, 2800);
+    whoTimers.push(t);
+  });
+}
+
+// ── THREE-SECOND SWAP ──────────────────────────────────────
+(function() {
+  const row = document.getElementById('swapRow');
+  if (!row) return;
+
+  const cards = Array.from(row.querySelectorAll('[data-swap-index]'));
+  const TOTAL = cards.length;
+  const fillEl = document.getElementById('swapFill');
+  const countEl = document.getElementById('swapCount');
+  const finalEl = document.getElementById('swapFinal');
+  let swapCurrent = 0;
+  let drag = null;
+  let cancelAnim = null;
+  let isHovering = false;
+
+  function toSVG(svg, cx, cy) {
+    const pt = svg.createSVGPoint();
+    pt.x = cx; pt.y = cy;
+    return pt.matrixTransform(svg.getScreenCTM().inverse());
+  }
+  function getPos(el) {
+    const m = (el.getAttribute('transform') || '').match(/translate\(\s*([\d.-]+)[\s,]+([\d.-]+)\s*\)/);
+    return m ? { x: +m[1], y: +m[2] } : { x: 0, y: 0 };
+  }
+  function setPos(el, x, y) {
+    el.setAttribute('transform', `translate(${x.toFixed(1)},${y.toFixed(1)})`);
+  }
+  function animateTo(el, tx, ty, dur, easeFn, onDone) {
+    if (cancelAnim) { cancelAnim(); cancelAnim = null; }
+    const from = getPos(el), t0 = performance.now();
+    let raf;
+    function tick(now) {
+      const p = Math.min((now - t0) / dur, 1), e = easeFn(p);
+      setPos(el, from.x + (tx - from.x)*e, from.y + (ty - from.y)*e);
+      if (p < 1) { raf = requestAnimationFrame(tick); }
+      else { cancelAnim = null; onDone && onDone(); }
+    }
+    raf = requestAnimationFrame(tick);
+    cancelAnim = () => cancelAnimationFrame(raf);
+  }
+  const ease3  = p => 1 - Math.pow(1 - p, 3);
+  const easeEl = p => p === 0 ? 0 : p === 1 ? 1 :
+    Math.pow(2, -10*p) * Math.sin((p*10 - 0.75) * 2*Math.PI/3) + 1;
+
+  function updateRail(i) {
+    const pct = i >= TOTAL ? 100 : (i / (TOTAL-1) * 100);
+    if (fillEl) fillEl.style.width = pct + '%';
+    if (countEl) countEl.textContent = i >= TOTAL ? '✓' : (i+1)+' / '+TOTAL;
+  }
+
+  function setActiveCard(i) {
+    cards.forEach(c => {
+      const ci = +c.dataset.swapIndex;
+      c.classList.toggle('is-active', ci === i);
+      c.classList.toggle('is-done', ci < i);
+    });
+    if (finalEl) finalEl.style.display = i >= TOTAL ? 'flex' : 'none';
+    updateRail(i);
+  }
+
+  function resetCard(card) {
+    const de = card.querySelector('.si-drag');
+    if (!de) return;
+    de.classList.remove('si-drag--dragging', 'si-drag--snapped');
+    setPos(de, +de.dataset.sx, +de.dataset.sy);
+    const ring = card.querySelector('.si-target-ring');
+    if (ring) ring.style.opacity = '';
+    const zip = card.querySelector('.si-zip-progress');
+    if (zip) zip.setAttribute('y2', '56');
+  }
+
+  window.resetSwap = function() {
+    swapCurrent = 0;
+    drag = null;
+    isHovering = false;
+    if (cancelAnim) { cancelAnim(); cancelAnim = null; }
+    cards.forEach(c => { resetCard(c); c.classList.remove('is-active', 'is-done'); });
+    if (finalEl) finalEl.style.display = 'none';
+    requestAnimationFrame(() => setActiveCard(0));
+  };
+
+  function completeCard(card, de) {
+    animateTo(de, +de.dataset.tx, +de.dataset.ty, 260, ease3, () => {
+      const ring = card.querySelector('.si-target-ring');
+      if (ring) ring.style.opacity = '0';
+    });
+    de.classList.remove('si-drag--dragging');
+    de.classList.add('si-drag--snapped');
+    setTimeout(() => {
+      swapCurrent++;
+      setActiveCard(swapCurrent);
+      drag = null;
+    }, 800);
+  }
+
+  function activeCard() { return cards.find(c => +c.dataset.swapIndex === swapCurrent); }
+
+  row.addEventListener('mousedown', e => {
+    const card = activeCard(); if (!card) return;
+    const de = card.querySelector('.si-drag');
+    if (!de || de.classList.contains('si-drag--snapped')) return;
+    const svg = card.querySelector('.swap-svg'); if (!svg) return;
+    const c = e; const pt = toSVG(svg, c.clientX, c.clientY);
+    const p = getPos(de);
+    if (Math.hypot(pt.x - p.x, pt.y - p.y) > (+de.dataset.snap || 28) * 2.6) return;
+    e.preventDefault();
+    if (cancelAnim) { cancelAnim(); cancelAnim = null; }
+    drag = {
+      el: de, svg, card,
+      type: de.dataset.type || 'free',
+      sx: +de.dataset.sx, sy: +de.dataset.sy,
+      tx: +de.dataset.tx, ty: +de.dataset.ty,
+      snap: +de.dataset.snap || 28,
+      grabDx: pt.x - p.x, grabDy: pt.y - p.y,
+    };
+    de.classList.add('si-drag--dragging');
+  });
+
+  window.addEventListener('mousemove', e => {
+    if (drag) {
+      const pt = toSVG(drag.svg, e.clientX, e.clientY);
+      let nx = pt.x - drag.grabDx, ny = pt.y - drag.grabDy;
+      if (drag.type === 'vertical') nx = drag.sx;
+      setPos(drag.el, nx, ny);
+      if (drag.type === 'vertical') {
+        const zip = drag.card.querySelector('.si-zip-progress');
+        if (zip) zip.setAttribute('y2', Math.max(Math.min(ny, 200), 56).toFixed(0));
+      }
+      return;
+    }
+    const card = activeCard(); if (!card) return;
+    const de = card.querySelector('.si-drag');
+    if (!de || de.classList.contains('si-drag--snapped')) return;
+    const svg = card.querySelector('.swap-svg'); if (!svg) return;
+    const r = card.getBoundingClientRect();
+    const inCard = e.clientX >= r.left && e.clientX <= r.right && e.clientY >= r.top && e.clientY <= r.bottom;
+    if (!inCard) {
+      if (isHovering) { isHovering = false; animateTo(de, +de.dataset.sx, +de.dataset.sy, 620, easeEl); }
+      return;
+    }
+    isHovering = true;
+    if (cancelAnim) { cancelAnim(); cancelAnim = null; }
+    const pt = toSVG(svg, e.clientX, e.clientY);
+    const sx = +de.dataset.sx, sy = +de.dataset.sy, max = 18;
+    let dx = Math.max(-max, Math.min(max, (pt.x - sx) * 0.2));
+    let dy = Math.max(-max, Math.min(max, (pt.y - sy) * 0.2));
+    if (de.dataset.type === 'vertical') dx = 0;
+    setPos(de, sx + dx, sy + dy);
+  });
+
+  window.addEventListener('mouseup', () => {
+    if (!drag) return;
+    const { el, card, sx, sy, snap } = drag;
+    el.classList.remove('si-drag--dragging');
+    const p = getPos(el);
+    if (Math.hypot(p.x - drag.tx, p.y - drag.ty) <= snap) {
+      completeCard(card, el);
+    } else {
+      animateTo(el, sx, sy, 560, easeEl);
+      drag = null;
+    }
+  });
+
+  setActiveCard(0);
+})();
+
+/* ── Lead capture form ──────────────────────────────────────── */
+(function () {
+  const submitBtn = document.getElementById('leadSubmit');
+  const clearBtn  = document.getElementById('leadClear');
+  const errEl     = document.getElementById('leadError');
+  const sucEl     = document.getElementById('leadSuccess');
+  if (!submitBtn) return;
+
+  const fields = ['lName','lOrg','lRole','lEmail','lPhone'];
+  const get    = id => document.getElementById(id).value.trim();
+  const clear  = () => fields.forEach(id => { document.getElementById(id).value = ''; });
+
+  submitBtn.addEventListener('click', async () => {
+    const name = get('lName'), org = get('lOrg');
+    errEl.style.display = 'none';
+    sucEl.style.display  = 'none';
+    if (!name || !org) { errEl.style.display = 'block'; return; }
+
+    if (window.kiosk) {
+      try { await window.kiosk.saveContact({
+        name, org, role: get('lRole'), email: get('lEmail'), phone: get('lPhone')
+      }); } catch (e) { console.error(e); }
+    }
+
+    clear();
+    sucEl.style.display = 'flex';
+    setTimeout(() => { sucEl.style.display = 'none'; }, 3500);
+  });
+
+  clearBtn.addEventListener('click', () => {
+    clear();
+    errEl.style.display = 'none';
+    sucEl.style.display  = 'none';
+  });
+})();
+
+/* ── QR code (Electron IPC) ────────────────────────────────── */
+(function () {
+  if (!window.kiosk) return;
+  window.kiosk.getQR().then(url => {
+    const img = document.getElementById('qrImg');
+    if (img && url) img.src = url;
+  }).catch(() => {});
+})();
+
+/* ── Pi mode: mirror class on body ───────────────────────────── */
+(function () {
+  const mode = window.kiosk ? window.kiosk.piMode : 'desktop';
+  if (mode === 'zero') document.body.classList.add('pi-zero', 'is-pi');
+  else if (mode === 'pi5') document.body.classList.add('is-pi');
+})();
+
+/* ── Welcome overlay ─────────────────────────────────────────── */
+const _welcome = document.getElementById('welcome-overlay');
+
+function showWelcome() {
+  _welcome.classList.add('is-visible');
+  clearTimeout(_inactivityTimer);
+}
+function hideWelcome() {
+  _welcome.classList.remove('is-visible');
+  _resetInactivity();
+}
+
+document.querySelectorAll('.wcard').forEach(btn => {
+  btn.addEventListener('click', () => {
+    hideWelcome();
+    goToScreen(Number(btn.dataset.idx));
+  });
+});
+
+const _hudBtn = document.getElementById('hud-logo-btn');
+if (_hudBtn) _hudBtn.addEventListener('click', showWelcome);
+
+const _introCta = document.getElementById('intro-cta-btn');
+if (_introCta) _introCta.addEventListener('click', () => goToScreen(1));
+
+showWelcome(); // show on launch
+
+/* ── Inactivity timer (60 s → welcome) ───────────────────────── */
+let _inactivityTimer;
+function _resetInactivity() {
+  clearTimeout(_inactivityTimer);
+  _inactivityTimer = setTimeout(showWelcome, 60000);
+}
+['touchstart', 'touchend', 'click', 'keydown', 'mousemove'].forEach(evt => {
+  document.addEventListener(evt, () => {
+    if (!_welcome.classList.contains('is-visible')) _resetInactivity();
+  }, { passive: true });
+});
+
+/* ── Touch swipe navigation ──────────────────────────────────── */
+let _tx0 = 0, _ty0 = 0;
+document.addEventListener('touchstart', e => {
+  _tx0 = e.touches[0].clientX;
+  _ty0 = e.touches[0].clientY;
+}, { passive: true });
+document.addEventListener('touchend', e => {
+  if (_welcome.classList.contains('is-visible')) return;
+  const tag = e.target.tagName;
+  if (tag === 'BUTTON' || tag === 'INPUT' || tag === 'TEXTAREA') return;
+  const dx = e.changedTouches[0].clientX - _tx0;
+  const dy = e.changedTouches[0].clientY - _ty0;
+  if (Math.abs(dx) > 60 && Math.abs(dx) > Math.abs(dy) * 1.5) {
+    if (dx < 0) goToScreen(currentScreen + 1);
+    else         goToScreen(currentScreen - 1);
+  }
+}, { passive: true });
+
+/* ── Touch → mouse forwarding for pump-head swap drag ───────── */
+(function () {
+  const row = document.getElementById('swapRow');
+  if (!row) return;
+  function fwd(type, src) {
+    src.target.dispatchEvent(new MouseEvent(type, {
+      bubbles: true, cancelable: true,
+      clientX: src.clientX, clientY: src.clientY, view: window,
+    }));
+  }
+  row.addEventListener('touchstart', e => { fwd('mousedown', e.touches[0]);        e.preventDefault(); }, { passive: false });
+  row.addEventListener('touchmove',  e => { fwd('mousemove', e.touches[0]);        e.preventDefault(); }, { passive: false });
+  row.addEventListener('touchend',   e => { fwd('mouseup',   e.changedTouches[0]); e.preventDefault(); }, { passive: false });
+})();
+
+</script>
+
+<!-- ── Welcome / Home overlay ────────────────────────────────── -->
+<div id="welcome-overlay">
+  <img src="assets/Precisian_White_Text_Logo.png" alt="Precisian Medical Instruments" class="welcome-logo" />
+  <h1 class="welcome-headline">
+    Pocket sized airway management<br>for point of injury care
+  </h1>
+  <p class="welcome-prompt">Touch a section to explore</p>
+  <div class="welcome-grid">
+    <button class="wcard" data-idx="1">
+      <span class="wcard-num">01</span>
+      <span class="wcard-title">VACTOR System</span>
+      <span class="wcard-sub">Design &amp; philosophy</span>
+    </button>
+    <button class="wcard" data-idx="2">
+      <span class="wcard-num">02</span>
+      <span class="wcard-title">The Problem</span>
+      <span class="wcard-sub">Why VACTOR exists</span>
+    </button>
+    <button class="wcard" data-idx="3">
+      <span class="wcard-num">03</span>
+      <span class="wcard-title">The System</span>
+      <span class="wcard-sub">Interactive 3D model</span>
+    </button>
+    <button class="wcard" data-idx="4">
+      <span class="wcard-num">04</span>
+      <span class="wcard-title">How It Works</span>
+      <span class="wcard-sub">4-step deployment</span>
+    </button>
+    <button class="wcard" data-idx="5">
+      <span class="wcard-num">05</span>
+      <span class="wcard-title">Pump Head Swap</span>
+      <span class="wcard-sub">3-second replacement</span>
+    </button>
+    <button class="wcard" data-idx="6">
+      <span class="wcard-num">06</span>
+      <span class="wcard-title">Who It's For</span>
+      <span class="wcard-sub">EMS · Military · Surgical</span>
+    </button>
+    <button class="wcard" data-idx="7">
+      <span class="wcard-num">07</span>
+      <span class="wcard-title">About PMI</span>
+      <span class="wcard-sub">Mission &amp; credentials</span>
+    </button>
+    <button class="wcard" data-idx="8">
+      <span class="wcard-num">08</span>
+      <span class="wcard-title">Get In Touch</span>
+      <span class="wcard-sub">Contact &amp; connect</span>
+    </button>
+  </div>
+  <p class="welcome-swipe">← Swipe left or right to navigate between sections →</p>
+</div>
+
+</body>
+</html>
