@@ -10,7 +10,7 @@
   <script>
     if (window.kiosk) {
       if (window.kiosk.piMode === 'zero') document.documentElement.classList.add('pi-zero','is-pi');
-      else if (window.kiosk.piMode === 'pi5') document.documentElement.classList.add('is-pi');
+      else if (window.kiosk.piMode === 'pi4' || window.kiosk.piMode === 'pi5') document.documentElement.classList.add('is-pi');
     }
   </script>
   <style>
@@ -1881,7 +1881,7 @@ function startWhoSlide() {
 (function () {
   const mode = window.kiosk ? window.kiosk.piMode : 'desktop';
   if (mode === 'zero') document.body.classList.add('pi-zero', 'is-pi');
-  else if (mode === 'pi5') document.body.classList.add('is-pi');
+  else if (mode === 'pi4' || mode === 'pi5') document.body.classList.add('is-pi');
 })();
 
 /* ── Welcome overlay ─────────────────────────────────────────── */

@@ -14,19 +14,21 @@ const os   = require('os');
 function detectPiMode() {
   const model = (os.cpus()[0] || {}).model || '';
   if (model.includes('Cortex-A53')) return 'zero'; // Pi Zero 2 W
+  if (model.includes('Cortex-A72')) return 'pi4';  // Pi 4
   if (model.includes('Cortex-A76')) return 'pi5';  // Pi 5
-  if (process.arch === 'arm' || process.arch === 'arm64') return 'pi5';
+  if (process.arch === 'arm' || process.arch === 'arm64') return 'pi4'; // safe default for unknown Pi
   return 'desktop';
 }
 const PI_MODE = detectPiMode();
 
-// Pi Zero 2 W: disable GPU — safer with only 512 MB RAM
+// All Pi models run without sandbox; Pi Zero also disables GPU (512 MB RAM)
 if (PI_MODE === 'zero') {
   app.commandLine.appendSwitch('disable-gpu');
   app.commandLine.appendSwitch('disable-software-rasterizer');
+}
+if (PI_MODE !== 'desktop') {
   app.commandLine.appendSwitch('no-sandbox');
-} else if (PI_MODE === 'pi5') {
-  app.commandLine.appendSwitch('no-sandbox');
+  app.commandLine.appendSwitch('touch-events', 'enabled'); // USB-C HID touchscreens
 }
 
 let win;
