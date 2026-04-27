@@ -5,4 +5,6 @@ leads.csv
 .DS_Store
 dist/
 out/
+www/
+android/
 

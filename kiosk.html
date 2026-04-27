@@ -6,11 +6,14 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700;900&display=swap" rel="stylesheet">
-  <!-- Pi mode applied before CSS so the correct transition durations are used from the first paint -->
+  <!-- QR library + Android/Capacitor polyfill (no-ops in Electron — preload.js sets window.kiosk first) -->
+  <script src="assets/js/qrcode.min.js"></script>
+  <script src="android-polyfill.js"></script>
+  <!-- Pi / Android mode applied before CSS so transition durations are correct from the first paint -->
   <script>
     if (window.kiosk) {
       if (window.kiosk.piMode === 'zero') document.documentElement.classList.add('pi-zero','is-pi');
-      else if (window.kiosk.piMode === 'pi4' || window.kiosk.piMode === 'pi5') document.documentElement.classList.add('is-pi');
+      else if (['pi4','pi5','android'].includes(window.kiosk.piMode)) document.documentElement.classList.add('is-pi');
     }
   </script>
   <style>
@@ -1881,7 +1884,7 @@ function startWhoSlide() {
 (function () {
   const mode = window.kiosk ? window.kiosk.piMode : 'desktop';
   if (mode === 'zero') document.body.classList.add('pi-zero', 'is-pi');
-  else if (mode === 'pi4' || mode === 'pi5') document.body.classList.add('is-pi');
+  else if (['pi4','pi5','android'].includes(mode)) document.body.classList.add('is-pi');
 })();
 
 /* ── Welcome overlay ─────────────────────────────────────────── */

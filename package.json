@@ -3,19 +3,25 @@
   "version": "1.0.0",
   "main": "main.js",
   "scripts": {
-    "start":          "electron .",
-    "start:pi5":      "electron . --no-sandbox --touch-events=enabled",
-    "start:pi4":      "electron . --no-sandbox --touch-events=enabled",
-    "start:pi-zero":  "electron . --no-sandbox --disable-gpu --disable-software-rasterizer --touch-events=enabled"
+    "start":              "electron .",
+    "start:pi5":          "electron . --no-sandbox --touch-events=enabled",
+    "start:pi4":          "electron . --no-sandbox --touch-events=enabled",
+    "start:pi-zero":      "electron . --no-sandbox --disable-gpu --disable-software-rasterizer --touch-events=enabled",
+    "prebuild:android":   "rm -rf www && mkdir -p www && cp kiosk.html www/index.html && cp -r assets www/ && cp android-polyfill.js www/ && (cp odoo-config.json www/ 2>/dev/null || echo 'Warning: No odoo-config.json — Odoo sync disabled in APK')",
+    "build:android":      "npx cap sync android",
+    "open:android":       "npx cap open android"
   },
   "keywords": [],
   "author": "",
   "license": "ISC",
   "description": "PMI VACTOR — Fullscreen kiosk presentation app",
   "devDependencies": {
-    "electron": "^41.2.2"
+    "electron":          "^41.2.2",
+    "@capacitor/cli":   "^6.0.0"
   },
   "dependencies": {
-    "qrcode": "^1.5.4"
+    "qrcode":            "^1.5.4",
+    "@capacitor/core":   "^6.0.0",
+    "@capacitor/android": "^6.0.0"
   }
 }

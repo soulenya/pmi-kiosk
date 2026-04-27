@@ -1,0 +1,17 @@
+{
+  "appId": "com.precisianmedical.pmikiosk",
+  "appName": "PMI Kiosk",
+  "webDir": "www",
+  "server": {
+    "androidScheme": "https"
+  },
+  "plugins": {
+    "CapacitorHttp": {
+      "enabled": true
+    }
+  },
+  "android": {
+    "captureInput": true,
+    "webContentsDebuggingEnabled": false
+  }
+}
