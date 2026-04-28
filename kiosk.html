@@ -1988,12 +1988,20 @@ document.addEventListener('touchstart', e => {
   _ty0 = e.touches[0].clientY;
 }, { passive: true });
 document.addEventListener('touchend', e => {
-  if (_welcome.classList.contains('is-visible')) return;
-  const tag = e.target.tagName;
-  if (tag === 'BUTTON' || tag === 'INPUT' || tag === 'TEXTAREA') return;
   const dx = e.changedTouches[0].clientX - _tx0;
   const dy = e.changedTouches[0].clientY - _ty0;
-  if (Math.abs(dx) > 60 && Math.abs(dx) > Math.abs(dy) * 1.5) {
+  const isHorizSwipe = Math.abs(dx) > 60 && Math.abs(dx) > Math.abs(dy) * 1.5;
+  // Allow swipe to dismiss welcome overlay
+  if (_welcome.classList.contains('is-visible')) {
+    if (isHorizSwipe) {
+      hideWelcome();
+      if (dx < 0) goToScreen(Math.max(currentScreen, 1));
+    }
+    return;
+  }
+  const tag = e.target.tagName;
+  if (tag === 'BUTTON' || tag === 'INPUT' || tag === 'TEXTAREA') return;
+  if (isHorizSwipe) {
     if (dx < 0) goToScreen(currentScreen + 1);
     else         goToScreen(currentScreen - 1);
   }
