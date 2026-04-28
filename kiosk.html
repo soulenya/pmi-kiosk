@@ -877,7 +877,7 @@
 
     /* ── Touch baseline ───────────────────────────────────────────── */
     *, *::before, *::after { -webkit-tap-highlight-color: transparent; }
-    button, .wcard, .hero-cta, .model-thumb, .contact-replay,
+    button, .wcard, .wnav-btn, .hero-cta, .model-thumb, .contact-replay,
     .kform-submit, .kform-clear, .kform-ghost, .hud-dot {
       touch-action: manipulation;
     }
@@ -915,52 +915,78 @@
     #welcome-overlay {
       position: fixed; inset: 0; z-index: 1000;
       background: var(--black);
-      display: flex; flex-direction: column;
-      align-items: center; justify-content: center;
-      padding: 56px 48px 36px;
+      display: flex; flex-direction: row;
       opacity: 0; pointer-events: none;
       transition: opacity 0.4s ease;
       touch-action: manipulation;
+      overflow: hidden;
     }
     #welcome-overlay.is-visible { opacity: 1; pointer-events: all; }
-    .welcome-logo { height: 26px; margin-bottom: 22px; opacity: 0.9; }
+
+    /* Left branding panel */
+    .welcome-left {
+      width: 36%;
+      min-width: 220px;
+      display: flex; flex-direction: column;
+      justify-content: center;
+      padding: 40px 32px 40px 44px;
+      border-right: 1px solid rgba(255,255,255,0.10);
+      gap: 14px;
+    }
+    .welcome-logo { height: 28px; opacity: 0.9; }
     .welcome-headline {
-      font-size: clamp(18px, 2.8vw, 38px);
+      font-size: clamp(20px, 2.4vw, 34px);
       font-weight: var(--fw-black); line-height: 1.15;
-      text-align: center; color: var(--white); margin-bottom: 8px;
+      color: var(--white);
     }
-    .welcome-prompt {
-      font-size: 11px; letter-spacing: 0.22em; text-transform: uppercase;
-      color: var(--muted); margin-bottom: 28px;
+    .welcome-tagline {
+      font-size: 11px; letter-spacing: 0.18em; text-transform: uppercase;
+      color: rgba(255,255,255,0.4);
     }
-    .welcome-grid {
+
+    /* Right nav button panel */
+    .welcome-nav {
+      flex: 1;
       display: grid;
-      grid-template-columns: repeat(4, 1fr);
-      gap: 14px; width: 100%; max-width: 1200px;
+      grid-template-columns: 1fr 1fr;
+      grid-template-rows: repeat(4, 1fr);
+      gap: 1px;
+      background: rgba(255,255,255,0.07);
+      overflow: hidden;
     }
-    @media (max-width: 900px) {
-      .welcome-grid { grid-template-columns: repeat(2, 1fr); }
-      #welcome-overlay { padding: 56px 20px 28px; }
+    .wnav-btn {
+      background: var(--black);
+      display: flex; align-items: center;
+      gap: 16px;
+      padding: 0 24px;
+      min-height: 60px;
+      cursor: pointer;
+      border: none;
+      color: var(--white);
+      font-family: var(--font);
+      text-align: left;
+      touch-action: manipulation;
+      user-select: none;
+      transition: background 0.12s;
     }
-    .wcard {
-      background: rgba(255,255,255,0.10);
-      border: 1px solid rgba(255,255,255,0.28);
-      border-radius: 8px; padding: 22px 18px;
-      display: flex; flex-direction: column; gap: 6px;
-      cursor: pointer; text-align: left;
-      color: var(--white); font-family: var(--font);
-      touch-action: manipulation; user-select: none;
-      transition: background 0.18s, border-color 0.18s, transform 0.1s;
-      min-height: 96px;
+    .wnav-btn:active { background: rgba(232,0,13,0.18); }
+    .wnav-num {
+      font-size: 9px; font-weight: var(--fw-semi);
+      letter-spacing: 0.22em; color: var(--red);
+      min-width: 22px; flex-shrink: 0;
     }
-    .wcard:hover  { background: rgba(255,255,255,0.16); border-color: rgba(255,255,255,0.4); }
-    .wcard:active { background: rgba(232,0,13,0.22); border-color: var(--red); transform: scale(0.96); }
-    .wcard-num   { font-size: 9px; font-weight: var(--fw-semi); letter-spacing: 0.22em; color: var(--red); }
-    .wcard-title { font-size: clamp(12px, 1.1vw, 14px); font-weight: var(--fw-bold); line-height: 1.2; }
-    .wcard-sub   { font-size: 10px; color: rgba(255,255,255,0.65); }
-    .welcome-swipe {
-      margin-top: 18px; font-size: 10px;
-      color: rgba(255,255,255,0.45); letter-spacing: 0.1em; text-transform: uppercase;
+    .wnav-label {
+      flex: 1;
+      font-size: clamp(13px, 1.3vw, 16px);
+      font-weight: var(--fw-bold);
+      line-height: 1.2;
+    }
+    .wnav-sub {
+      font-size: 10px; color: rgba(255,255,255,0.45); display: block; margin-top: 2px;
+    }
+    .wnav-arrow {
+      color: rgba(255,255,255,0.25);
+      font-size: 18px; flex-shrink: 0;
     }
   </style>
 </head>
@@ -1956,7 +1982,7 @@ function hideWelcome() {
   _resetInactivity();
 }
 
-document.querySelectorAll('.wcard').forEach(btn => {
+document.querySelectorAll('.wcard, .wnav-btn').forEach(btn => {
   btn.addEventListener('click', () => {
     hideWelcome();
     goToScreen(Number(btn.dataset.idx));
@@ -1998,7 +2024,7 @@ document.addEventListener('touchend', e => {
     if (isHorizSwipe) {
       hideWelcome();
       if (dx < 0) goToScreen(Math.max(currentScreen, 1));
-    } else if (dist < 10 && Math.abs(dy) < 10 && !e.target.closest('.wcard')) {
+    } else if (dist < 10 && Math.abs(dy) < 10 && !e.target.closest('.wcard, .wnav-btn')) {
       // Tap anywhere outside a wcard = enter app
       hideWelcome();
       goToScreen(Math.max(currentScreen, 1));
@@ -2032,54 +2058,58 @@ document.addEventListener('touchend', e => {
 
 <!-- ── Welcome / Home overlay ────────────────────────────────── -->
 <div id="welcome-overlay">
-  <img src="assets/Precisian_White_Text_Logo.png" alt="Precisian Medical Instruments" class="welcome-logo" />
-  <h1 class="welcome-headline">
-    Pocket sized airway management<br>for point of injury care
-  </h1>
-  <p class="welcome-prompt">Touch a section to explore</p>
-  <div class="welcome-grid">
-    <button class="wcard" data-idx="1">
-      <span class="wcard-num">01</span>
-      <span class="wcard-title">VACTOR System</span>
-      <span class="wcard-sub">Design &amp; philosophy</span>
+
+  <!-- Left: branding -->
+  <div class="welcome-left">
+    <img src="assets/Precisian_White_Text_Logo.png" alt="Precisian Medical Instruments" class="welcome-logo" />
+    <h1 class="welcome-headline">Pocket sized airway management<br>for point of injury care</h1>
+    <p class="welcome-tagline">Tap a section to explore</p>
+  </div>
+
+  <!-- Right: nav buttons -->
+  <div class="welcome-nav">
+    <button class="wnav-btn" data-idx="1">
+      <span class="wnav-num">01</span>
+      <span class="wnav-label">VACTOR System<span class="wnav-sub">Design &amp; philosophy</span></span>
+      <span class="wnav-arrow">›</span>
     </button>
-    <button class="wcard" data-idx="2">
-      <span class="wcard-num">02</span>
-      <span class="wcard-title">The Problem</span>
-      <span class="wcard-sub">Why VACTOR exists</span>
+    <button class="wnav-btn" data-idx="2">
+      <span class="wnav-num">02</span>
+      <span class="wnav-label">The Problem<span class="wnav-sub">Why VACTOR exists</span></span>
+      <span class="wnav-arrow">›</span>
     </button>
-    <button class="wcard" data-idx="3">
-      <span class="wcard-num">03</span>
-      <span class="wcard-title">The System</span>
-      <span class="wcard-sub">Interactive 3D model</span>
+    <button class="wnav-btn" data-idx="3">
+      <span class="wnav-num">03</span>
+      <span class="wnav-label">The System<span class="wnav-sub">Interactive 3D model</span></span>
+      <span class="wnav-arrow">›</span>
     </button>
-    <button class="wcard" data-idx="4">
-      <span class="wcard-num">04</span>
-      <span class="wcard-title">How It Works</span>
-      <span class="wcard-sub">4-step deployment</span>
+    <button class="wnav-btn" data-idx="4">
+      <span class="wnav-num">04</span>
+      <span class="wnav-label">How It Works<span class="wnav-sub">4-step deployment</span></span>
+      <span class="wnav-arrow">›</span>
     </button>
-    <button class="wcard" data-idx="5">
-      <span class="wcard-num">05</span>
-      <span class="wcard-title">Pump Head Swap</span>
-      <span class="wcard-sub">3-second replacement</span>
+    <button class="wnav-btn" data-idx="5">
+      <span class="wnav-num">05</span>
+      <span class="wnav-label">Pump Head Swap<span class="wnav-sub">3-second replacement</span></span>
+      <span class="wnav-arrow">›</span>
     </button>
-    <button class="wcard" data-idx="6">
-      <span class="wcard-num">06</span>
-      <span class="wcard-title">Who It's For</span>
-      <span class="wcard-sub">EMS · Military · Surgical</span>
+    <button class="wnav-btn" data-idx="6">
+      <span class="wnav-num">06</span>
+      <span class="wnav-label">Who It's For<span class="wnav-sub">EMS · Military · Surgical</span></span>
+      <span class="wnav-arrow">›</span>
     </button>
-    <button class="wcard" data-idx="7">
-      <span class="wcard-num">07</span>
-      <span class="wcard-title">About PMI</span>
-      <span class="wcard-sub">Mission &amp; credentials</span>
+    <button class="wnav-btn" data-idx="7">
+      <span class="wnav-num">07</span>
+      <span class="wnav-label">About PMI<span class="wnav-sub">Mission &amp; credentials</span></span>
+      <span class="wnav-arrow">›</span>
     </button>
-    <button class="wcard" data-idx="8">
-      <span class="wcard-num">08</span>
-      <span class="wcard-title">Get In Touch</span>
-      <span class="wcard-sub">Contact &amp; connect</span>
+    <button class="wnav-btn" data-idx="8">
+      <span class="wnav-num">08</span>
+      <span class="wnav-label">Get In Touch<span class="wnav-sub">Contact &amp; connect</span></span>
+      <span class="wnav-arrow">›</span>
     </button>
   </div>
-  <p class="welcome-swipe">← Swipe left or right to navigate between sections →</p>
+
 </div>
 
 </body>
