@@ -6,5 +6,12 @@ leads.csv
 dist/
 out/
 www/
-android/
+
+# Android — track source, exclude build artifacts and local config
+android/local.properties
+android/.gradle/
+android/app/build/
+android/build/
+android/capacitor-cordova-android-plugins/build/
+android/gradle/wrapper/oracleJdk-26/
 
