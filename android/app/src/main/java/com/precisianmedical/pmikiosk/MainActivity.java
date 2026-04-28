@@ -6,6 +6,8 @@ import android.view.View;
 import android.view.WindowInsets;
 import android.view.WindowInsetsController;
 import android.view.WindowManager;
+import android.webkit.WebSettings;
+import android.webkit.WebView;
 import androidx.core.view.WindowCompat;
 import com.getcapacitor.BridgeActivity;
 
@@ -13,7 +15,6 @@ public class MainActivity extends BridgeActivity {
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
-        // Set window flags BEFORE super.onCreate() so they take effect on first frame
         getWindow().addFlags(
             WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON |
             WindowManager.LayoutParams.FLAG_LAYOUT_NO_LIMITS
@@ -21,7 +22,14 @@ public class MainActivity extends BridgeActivity {
 
         super.onCreate(savedInstanceState);
 
-        // Extend content edge-to-edge using WindowCompat (compat-safe)
+        // Disable WebView cache so every launch uses the bundled APK assets
+        WebView webView = getBridge().getWebView();
+        if (webView != null) {
+            WebSettings settings = webView.getSettings();
+            settings.setCacheMode(WebSettings.LOAD_NO_CACHE);
+            webView.clearCache(true);
+        }
+
         WindowCompat.setDecorFitsSystemWindows(getWindow(), false);
         hideSystemUI();
     }
