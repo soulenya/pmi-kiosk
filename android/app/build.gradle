@@ -1,5 +1,8 @@
 apply plugin: 'com.android.application'
 
+// Auto-increment version code based on build timestamp (seconds since epoch)
+def buildTime = (int)(System.currentTimeMillis() / 1000L)
+
 android {
     namespace "com.precisianmedical.pmikiosk"
     compileSdk rootProject.ext.compileSdkVersion
@@ -7,8 +10,8 @@ android {
         applicationId "com.precisianmedical.pmikiosk"
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
-        versionCode 1
-        versionName "1.0"
+        versionCode buildTime
+        versionName new Date().format("yy.MM.dd.HHmm")
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
         aaptOptions {
              // Files and dirs to omit from the packaged assets dir, modified to accommodate modern web apps.
