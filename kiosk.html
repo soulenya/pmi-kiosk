@@ -914,80 +914,110 @@
     /* ── Welcome overlay ─────────────────────────────────────────── */
     #welcome-overlay {
       position: fixed; inset: 0; z-index: 1000;
-      background: var(--black);
-      display: flex; flex-direction: row;
-      opacity: 0; pointer-events: none;
-      transition: opacity 0.4s ease;
+      background: #0a0a0a;
+      display: flex; flex-direction: column;
+      align-items: stretch;
+      /* Visible by default — JS adds .is-hidden to dismiss */
+      opacity: 1; pointer-events: all;
+      transition: opacity 0.35s ease;
       touch-action: manipulation;
       overflow: hidden;
     }
-    #welcome-overlay.is-visible { opacity: 1; pointer-events: all; }
+    #welcome-overlay.is-hidden { opacity: 0; pointer-events: none; }
 
-    /* Left branding panel */
-    .welcome-left {
-      width: 36%;
-      min-width: 220px;
-      display: flex; flex-direction: column;
-      justify-content: center;
-      padding: 40px 32px 40px 44px;
-      border-right: 1px solid rgba(255,255,255,0.10);
-      gap: 14px;
-    }
-    .welcome-logo { height: 28px; opacity: 0.9; }
-    .welcome-headline {
-      font-size: clamp(20px, 2.4vw, 34px);
-      font-weight: var(--fw-black); line-height: 1.15;
-      color: var(--white);
-    }
-    .welcome-tagline {
-      font-size: 11px; letter-spacing: 0.18em; text-transform: uppercase;
-      color: rgba(255,255,255,0.4);
+    /* Red accent stripe across top */
+    .wsplash-bar {
+      position: absolute; top: 0; left: 0; right: 0;
+      height: 3px; background: #e8000d; z-index: 2;
     }
 
-    /* Right nav button panel */
-    .welcome-nav {
+    /* Header row: logo + company name */
+    .wsplash-header {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 32px 44px 0;
+      flex-shrink: 0;
+    }
+    .wsplash-logo { height: 26px; opacity: 0.90; }
+    .wsplash-company {
+      font-size: 10px; letter-spacing: 0.22em; text-transform: uppercase;
+      color: rgba(255,255,255,0.22);
+    }
+
+    /* Hero centre */
+    .wsplash-hero {
       flex: 1;
+      display: flex; flex-direction: column;
+      align-items: center; justify-content: center;
+      gap: 18px; text-align: center;
+      padding: 0 40px 20px;
+    }
+    .wsplash-product {
+      font-size: clamp(72px, 14vw, 130px);
+      font-weight: 900;
+      color: #ffffff;
+      letter-spacing: -0.03em;
+      line-height: 0.88;
+    }
+    .wsplash-product em { color: #e8000d; font-style: normal; }
+    .wsplash-tagline {
+      font-size: clamp(13px, 1.8vw, 18px);
+      color: rgba(255,255,255,0.50);
+      font-weight: 300;
+      letter-spacing: 0.03em;
+      max-width: 480px;
+      line-height: 1.5;
+    }
+    .wsplash-hint {
+      margin-top: 6px;
+      font-size: 9px; letter-spacing: 0.24em; text-transform: uppercase;
+      color: rgba(255,255,255,0.22);
+      animation: wsplash-pulse 2.6s ease-in-out infinite;
+    }
+    @keyframes wsplash-pulse {
+      0%,100% { opacity: 0.22; }
+      50%      { opacity: 0.65; }
+    }
+
+    /* Bottom nav strip — 8 buttons in one row */
+    .wsplash-nav {
       display: grid;
-      grid-template-columns: 1fr 1fr;
-      grid-template-rows: repeat(4, 1fr);
-      gap: 1px;
-      background: rgba(255,255,255,0.07);
-      overflow: hidden;
+      grid-template-columns: repeat(8, 1fr);
+      border-top: 1px solid rgba(255,255,255,0.08);
+      flex-shrink: 0;
     }
     .wnav-btn {
-      background: var(--black);
-      display: flex; align-items: center;
-      gap: 16px;
-      padding: 0 24px;
-      min-height: 60px;
+      background: transparent;
+      display: flex; flex-direction: column;
+      align-items: center; justify-content: center;
+      gap: 5px;
+      padding: 18px 8px;
+      min-height: 82px;
       cursor: pointer;
       border: none;
-      color: var(--white);
+      border-right: 1px solid rgba(255,255,255,0.07);
+      color: #ffffff;
       font-family: var(--font);
-      text-align: left;
+      text-align: center;
       touch-action: manipulation;
       user-select: none;
       transition: background 0.12s;
     }
-    .wnav-btn:active { background: rgba(232,0,13,0.18); }
+    .wnav-btn:last-child { border-right: none; }
+    .wnav-btn:active { background: rgba(232,0,13,0.20); }
     .wnav-num {
-      font-size: 9px; font-weight: var(--fw-semi);
-      letter-spacing: 0.22em; color: var(--red);
-      min-width: 22px; flex-shrink: 0;
+      font-size: 8px; font-weight: 600;
+      letter-spacing: 0.24em; color: #e8000d;
     }
     .wnav-label {
-      flex: 1;
-      font-size: clamp(13px, 1.3vw, 16px);
-      font-weight: var(--fw-bold);
-      line-height: 1.2;
+      font-size: clamp(9px, 1vw, 12px);
+      font-weight: 700;
+      line-height: 1.25;
     }
     .wnav-sub {
-      font-size: 10px; color: rgba(255,255,255,0.45); display: block; margin-top: 2px;
+      font-size: 8px; color: rgba(255,255,255,0.38);
+      display: block; margin-top: 2px;
     }
-    .wnav-arrow {
-      color: rgba(255,255,255,0.25);
-      font-size: 18px; flex-shrink: 0;
-    }
+    .wnav-arrow { display: none; }
   </style>
 </head>
 <body>
@@ -1974,11 +2004,11 @@ function startWhoSlide() {
 const _welcome = document.getElementById('welcome-overlay');
 
 function showWelcome() {
-  _welcome.classList.add('is-visible');
+  _welcome.classList.remove('is-hidden');
   clearTimeout(_inactivityTimer);
 }
 function hideWelcome() {
-  _welcome.classList.remove('is-visible');
+  _welcome.classList.add('is-hidden');
   _resetInactivity();
 }
 
@@ -1995,7 +2025,7 @@ if (_hudBtn) _hudBtn.addEventListener('click', showWelcome);
 const _introCta = document.getElementById('intro-cta-btn');
 if (_introCta) _introCta.addEventListener('click', () => goToScreen(1));
 
-showWelcome(); // show on launch
+// Overlay starts visible in CSS — no showWelcome() needed on launch
 
 /* ── Inactivity timer (60 s → welcome) ───────────────────────── */
 let _inactivityTimer;
@@ -2005,7 +2035,7 @@ function _resetInactivity() {
 }
 ['touchstart', 'touchend', 'click', 'keydown', 'mousemove'].forEach(evt => {
   document.addEventListener(evt, () => {
-    if (!_welcome.classList.contains('is-visible')) _resetInactivity();
+    if (_welcome.classList.contains('is-hidden')) _resetInactivity();
   }, { passive: true });
 });
 
@@ -2020,7 +2050,7 @@ document.addEventListener('touchend', e => {
   const dy = e.changedTouches[0].clientY - _ty0;
   const dist = Math.abs(dx);
   const isHorizSwipe = dist > 30 && dist > Math.abs(dy);
-  if (_welcome.classList.contains('is-visible')) {
+  if (!_welcome.classList.contains('is-hidden')) {
     if (isHorizSwipe) {
       hideWelcome();
       if (dx < 0) goToScreen(Math.max(currentScreen, 1));
@@ -2059,54 +2089,51 @@ document.addEventListener('touchend', e => {
 <!-- ── Welcome / Home overlay ────────────────────────────────── -->
 <div id="welcome-overlay">
 
-  <!-- Left: branding -->
-  <div class="welcome-left">
-    <img src="assets/Precisian_White_Text_Logo.png" alt="Precisian Medical Instruments" class="welcome-logo" />
-    <h1 class="welcome-headline">Pocket sized airway management<br>for point of injury care</h1>
-    <p class="welcome-tagline">Tap a section to explore</p>
+  <div class="wsplash-bar"></div>
+
+  <div class="wsplash-header">
+    <img src="assets/Precisian_White_Text_Logo.png" alt="Precisian Medical Instruments" class="wsplash-logo" />
+    <span class="wsplash-company">Precisian Medical Instruments</span>
   </div>
 
-  <!-- Right: nav buttons -->
-  <div class="welcome-nav">
+  <div class="wsplash-hero">
+    <div class="wsplash-product">VAC<em>TOR</em></div>
+    <p class="wsplash-tagline">Pocket-sized airway management<br>for point-of-injury care</p>
+    <p class="wsplash-hint">Tap any section below — or anywhere — to explore</p>
+  </div>
+
+  <div class="wsplash-nav">
     <button class="wnav-btn" data-idx="1">
       <span class="wnav-num">01</span>
-      <span class="wnav-label">VACTOR System<span class="wnav-sub">Design &amp; philosophy</span></span>
-      <span class="wnav-arrow">›</span>
+      <span class="wnav-label">VACTOR<span class="wnav-sub">System</span></span>
     </button>
     <button class="wnav-btn" data-idx="2">
       <span class="wnav-num">02</span>
-      <span class="wnav-label">The Problem<span class="wnav-sub">Why VACTOR exists</span></span>
-      <span class="wnav-arrow">›</span>
+      <span class="wnav-label">The Problem<span class="wnav-sub">Why it exists</span></span>
     </button>
     <button class="wnav-btn" data-idx="3">
       <span class="wnav-num">03</span>
-      <span class="wnav-label">The System<span class="wnav-sub">Interactive 3D model</span></span>
-      <span class="wnav-arrow">›</span>
+      <span class="wnav-label">The System<span class="wnav-sub">3D model</span></span>
     </button>
     <button class="wnav-btn" data-idx="4">
       <span class="wnav-num">04</span>
-      <span class="wnav-label">How It Works<span class="wnav-sub">4-step deployment</span></span>
-      <span class="wnav-arrow">›</span>
+      <span class="wnav-label">How It Works<span class="wnav-sub">Deployment</span></span>
     </button>
     <button class="wnav-btn" data-idx="5">
       <span class="wnav-num">05</span>
-      <span class="wnav-label">Pump Head Swap<span class="wnav-sub">3-second replacement</span></span>
-      <span class="wnav-arrow">›</span>
+      <span class="wnav-label">Pump Head<span class="wnav-sub">Quick swap</span></span>
     </button>
     <button class="wnav-btn" data-idx="6">
       <span class="wnav-num">06</span>
-      <span class="wnav-label">Who It's For<span class="wnav-sub">EMS · Military · Surgical</span></span>
-      <span class="wnav-arrow">›</span>
+      <span class="wnav-label">Who It's For<span class="wnav-sub">EMS · Military</span></span>
     </button>
     <button class="wnav-btn" data-idx="7">
       <span class="wnav-num">07</span>
-      <span class="wnav-label">About PMI<span class="wnav-sub">Mission &amp; credentials</span></span>
-      <span class="wnav-arrow">›</span>
+      <span class="wnav-label">About PMI<span class="wnav-sub">Mission</span></span>
     </button>
     <button class="wnav-btn" data-idx="8">
       <span class="wnav-num">08</span>
-      <span class="wnav-label">Get In Touch<span class="wnav-sub">Contact &amp; connect</span></span>
-      <span class="wnav-arrow">›</span>
+      <span class="wnav-label">Get In Touch<span class="wnav-sub">Contact</span></span>
     </button>
   </div>
 
