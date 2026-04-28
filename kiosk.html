@@ -941,8 +941,8 @@
       #welcome-overlay { padding: 56px 20px 28px; }
     }
     .wcard {
-      background: rgba(255,255,255,0.04);
-      border: 1px solid rgba(255,255,255,0.09);
+      background: rgba(255,255,255,0.10);
+      border: 1px solid rgba(255,255,255,0.28);
       border-radius: 8px; padding: 22px 18px;
       display: flex; flex-direction: column; gap: 6px;
       cursor: pointer; text-align: left;
@@ -951,14 +951,14 @@
       transition: background 0.18s, border-color 0.18s, transform 0.1s;
       min-height: 96px;
     }
-    .wcard:hover  { background: rgba(255,255,255,0.07); border-color: rgba(255,255,255,0.2); }
-    .wcard:active { background: rgba(232,0,13,0.13); border-color: var(--red); transform: scale(0.96); }
+    .wcard:hover  { background: rgba(255,255,255,0.16); border-color: rgba(255,255,255,0.4); }
+    .wcard:active { background: rgba(232,0,13,0.22); border-color: var(--red); transform: scale(0.96); }
     .wcard-num   { font-size: 9px; font-weight: var(--fw-semi); letter-spacing: 0.22em; color: var(--red); }
     .wcard-title { font-size: clamp(12px, 1.1vw, 14px); font-weight: var(--fw-bold); line-height: 1.2; }
-    .wcard-sub   { font-size: 10px; color: var(--muted); }
+    .wcard-sub   { font-size: 10px; color: rgba(255,255,255,0.65); }
     .welcome-swipe {
       margin-top: 18px; font-size: 10px;
-      color: rgba(255,255,255,0.2); letter-spacing: 0.1em; text-transform: uppercase;
+      color: rgba(255,255,255,0.45); letter-spacing: 0.1em; text-transform: uppercase;
     }
   </style>
 </head>
@@ -1990,12 +1990,16 @@ document.addEventListener('touchstart', e => {
 document.addEventListener('touchend', e => {
   const dx = e.changedTouches[0].clientX - _tx0;
   const dy = e.changedTouches[0].clientY - _ty0;
-  const isHorizSwipe = Math.abs(dx) > 60 && Math.abs(dx) > Math.abs(dy) * 1.5;
-  // Allow swipe to dismiss welcome overlay
+  const dist = Math.abs(dx);
+  const isHorizSwipe = dist > 30 && dist > Math.abs(dy);
   if (_welcome.classList.contains('is-visible')) {
     if (isHorizSwipe) {
       hideWelcome();
       if (dx < 0) goToScreen(Math.max(currentScreen, 1));
+    } else if (dist < 10 && Math.abs(dy) < 10 && !e.target.closest('.wcard')) {
+      // Tap anywhere outside a wcard = enter app
+      hideWelcome();
+      goToScreen(Math.max(currentScreen, 1));
     }
     return;
   }
